@@ -879,17 +879,27 @@
     }
 
 
-    /* Short branded startup screen */
-    #loadingScreen{position:fixed;inset:0;z-index:100000;background:#0c0e11;display:flex;align-items:center;justify-content:center;padding:20px;opacity:1;visibility:visible;transition:opacity .28s ease,visibility .28s ease}
+    /* Animated Unity Law DOJ splash screen */
+    #loadingScreen{position:fixed;inset:0;z-index:100000;overflow:hidden;background:radial-gradient(ellipse at 50% 42%,#1b2028 0%,#101216 42%,#08090b 100%);display:flex;align-items:center;justify-content:center;padding:20px;opacity:1;visibility:visible;transition:opacity .55s ease,visibility .55s ease}
+    #loadingScreen:before,#loadingScreen:after{content:"";position:absolute;width:min(70vw,520px);aspect-ratio:1;border:1px solid #c0c5ce0d;border-radius:50%;pointer-events:none;animation:loadingOrbit 12s linear infinite}
+    #loadingScreen:before{width:min(78vw,620px);box-shadow:0 0 80px #c0c5ce08,inset 0 0 80px #c0c5ce06}
+    #loadingScreen:after{width:min(58vw,430px);animation-direction:reverse;animation-duration:16s;border-style:dashed;border-color:#c0c5ce12}
     #loadingScreen.hidden{opacity:0;visibility:hidden;pointer-events:none}
-    .loadingInner{text-align:center;color:#f1f3f5}
-    .loadingSeal{width:58px;height:58px;margin:0 auto 15px;border:1px solid #c0c5ce;border-radius:50%;display:grid;place-items:center;color:#e5e7eb;font-size:29px;box-shadow:0 0 24px #c0c5ce12}
-    .loadingTitle{font-size:16px;font-weight:800;letter-spacing:2px}
-    .loadingSub{font-size:10px;color:#8f98a5;letter-spacing:2px;margin-top:6px}
-    .loadingTrack{height:3px;width:116px;background:#272c34;border-radius:9px;margin:20px auto 0;overflow:hidden}
-    .loadingTrack span{display:block;width:40%;height:100%;background:#c0c5ce;border-radius:9px;animation:loadingMove .8s ease-in-out infinite alternate}
-    @keyframes loadingMove{from{transform:translateX(0)}to{transform:translateX(150%)}}
-    @media(prefers-reduced-motion:reduce){#loadingScreen{transition:none}.loadingTrack span{animation:none;width:100%}}
+    .loadingInner{text-align:center;color:#f1f3f5;position:relative;z-index:1;animation:loadingRise .9s cubic-bezier(.2,.75,.25,1) both}
+    .loadingSeal{position:relative;width:78px;height:78px;margin:0 auto 21px;border:1px solid #c0c5ce80;border-radius:50%;display:grid;place-items:center;color:#f1f3f5;font-size:36px;background:linear-gradient(145deg,#ffffff0b,#c0c5ce03);box-shadow:0 0 0 7px #c0c5ce08,0 0 35px #c0c5ce17;animation:sealPulse 2s ease-in-out infinite}
+    .loadingSeal:before{content:"";position:absolute;inset:-7px;border:1px solid #c0c5ce50;border-radius:50%;border-top-color:#f1f3f5;border-right-color:transparent;animation:loadingOrbit 2.6s linear infinite}
+    .loadingSeal:after{content:"";position:absolute;width:5px;height:5px;border-radius:50%;background:#f1f3f5;top:-9px;left:50%;box-shadow:0 0 10px #fff}
+    .loadingTitle{font-size:clamp(16px,3vw,19px);font-weight:800;letter-spacing:3.5px;text-shadow:0 0 24px #ffffff18;animation:loadingTextIn .8s .12s both}
+    .loadingSub{font-size:10px;color:#a5adb9;letter-spacing:2.3px;margin-top:9px;animation:loadingTextIn .8s .25s both}
+    .loadingCaption{font-size:9px;color:#737c89;letter-spacing:2px;text-transform:uppercase;margin-top:29px;animation:loadingTextIn .8s .35s both}
+    .loadingTrack{height:3px;width:min(230px,62vw);background:#272c34;border-radius:9px;margin:12px auto 0;overflow:hidden;box-shadow:0 0 15px #c0c5ce0b;animation:loadingTextIn .8s .35s both}
+    .loadingTrack span{display:block;width:100%;height:100%;background:linear-gradient(90deg,#737c89,#f1f3f5,#a8b0bc);border-radius:9px;transform-origin:left;animation:loadingProgress 8s linear forwards;box-shadow:0 0 12px #c0c5ce55}
+    @keyframes loadingOrbit{to{transform:rotate(360deg)}}
+    @keyframes sealPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 7px #c0c5ce08,0 0 25px #c0c5ce12}50%{transform:scale(1.045);box-shadow:0 0 0 11px #c0c5ce08,0 0 42px #c0c5ce25}}
+    @keyframes loadingRise{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @keyframes loadingTextIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes loadingProgress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+    @media(prefers-reduced-motion:reduce){#loadingScreen,#loadingScreen:before,#loadingScreen:after,.loadingInner,.loadingSeal,.loadingSeal:before,.loadingTitle,.loadingSub,.loadingCaption,.loadingTrack,.loadingTrack span{animation:none;transition:none}.loadingTrack span{transform:scaleX(1)}}
 
     .authgate{position:fixed;inset:0;z-index:99999;background:#0c0e11;display:flex;align-items:center;justify-content:center;padding:22px}
     .authcard{width:min(440px,100%);background:#14171c;border:1px solid #292e36;border-radius:18px;padding:28px;box-shadow:0 24px 80px #0008}
@@ -950,7 +960,8 @@
       <div class="loadingSeal">⚖</div>
       <div class="loadingTitle">UNITY LAW DOJ</div>
       <div class="loadingSub">JUSTICE • INTEGRITY • SERVICE</div>
-      <div class="loadingTrack"><span></span></div>
+      <div class="loadingCaption">Initialising secure portal</div>
+      <div class="loadingTrack" aria-hidden="true"><span></span></div>
     </div>
   </div>
   <section class="authgate" id="authgate">
@@ -1067,7 +1078,7 @@
     const LOADING_SCREEN_DURATION = 8000;
     function hideLoadingScreen() {
       if (loadingScreenHidden) return;
-      // Always keep the splash visible for the full 10 seconds, even if Firebase responds early.
+      // Keep the animated splash visible for the full 8 seconds, even if Firebase responds early.
       const elapsed = Date.now() - loadingScreenStartedAt;
       const remaining = LOADING_SCREEN_DURATION - elapsed;
       if (remaining > 0) {
@@ -1081,7 +1092,7 @@
         setTimeout(() => screen.remove(), 350);
       }
     }
-    // Failsafe still respects the full 10-second display duration.
+    // Failsafe still respects the full 8-second display duration.
     const loadingFailsafe = setTimeout(hideLoadingScreen, LOADING_SCREEN_DURATION);
 
     function initialiseFirebase() {

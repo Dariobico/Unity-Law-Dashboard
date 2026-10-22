@@ -836,10 +836,33 @@
         gap: 7px;
       }
     }
+
+    .authgate{position:fixed;inset:0;z-index:99999;background:#0c0e11;display:flex;align-items:center;justify-content:center;padding:22px}
+    .authcard{width:min(440px,100%);background:#14171c;border:1px solid #292e36;border-radius:18px;padding:28px;box-shadow:0 24px 80px #0008}
+    .authcard h1{font-size:22px;margin:0 0 8px}.authcard p{color:#969eaa;margin:0 0 20px}
+    .authcard label{display:block;font-size:12px;color:#c7cbd1;margin:14px 0 6px}
+    .authcard input{width:100%;padding:12px;border:1px solid #292e36;border-radius:9px;background:#0c0e11;color:#f1f3f5}
+    .authcard button{width:100%;margin-top:18px;padding:12px;border:0;border-radius:9px;background:#e5e7eb;color:#101216;font-weight:700}
+    .authmessage{font-size:12px;line-height:1.5;color:#e9b45d;margin-top:12px;overflow-wrap:anywhere}
+    #signoutBtn{padding:7px 10px;border:1px solid #292e36;border-radius:8px;background:#191d23;color:#f1f3f5;font-size:12px}
+    .cloudstatus{font-size:11px;color:#58c69b;margin-right:8px}
   </style>
 </head>
 <body>
-  <div class="app">
+  <section class="authgate" id="authgate">
+    <form class="authcard" id="loginForm">
+      <div style="font-size:30px;margin-bottom:10px">⚖</div>
+      <h1>Unity Law DOJ</h1>
+      <p>Restricted portal. Sign in with an authorised DOJ staff account.</p>
+      <label for="loginEmail">Staff email</label>
+      <input id="loginEmail" type="email" autocomplete="username" required placeholder="staff@example.com">
+      <label for="loginPassword">Password</label>
+      <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Your password">
+      <button type="submit" id="loginBtn">Sign in securely</button>
+      <div class="authmessage" id="authmessage">Access is limited to accounts created by the portal administrator.</div>
+    </form>
+  </section>
+  <div class="app" id="portalApp" style="display:none">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
         <div class="seal">⚖</div>
@@ -877,9 +900,9 @@
           <div class="crumb">UNITY LAW / DOJ / <b id="crumb">DASHBOARD</b></div>
         </div>
         <div class="topright">
-          <div class="staffpill">⚖ &nbsp; DOJ Staff Portal</div>
+          <span class="cloudstatus" id="cloudstatus">Connecting…</span><div class="staffpill">⚖ &nbsp; DOJ Staff Portal</div>
           <div class="avatar" id="avatar">D</div>
-          <span id="staffname" style="font-size:12px">DOJ Staff</span>
+          <span id="staffname" style="font-size:12px">DOJ Staff</span><button id="signoutBtn" type="button" onclick="signOutStaff()">Sign out</button>
         </div>
       </header>
       <div class="content" id="content"></div>
@@ -889,110 +912,110 @@
   <div id="modalroot"></div>
   <div id="toastroot"></div>
 
+  <!-- Firebase compat SDKs keep this existing single-file HTML project simple. -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <script>
-    const KEY = 'unity-law_doj_cases_v1', 
-          LOGKEY = 'unity-law_doj_log_v1', 
-          PROFILE = 'unity-law_doj_profile_v1';
-          
+    // Firebase Web App configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSGBxbMxG7uP3q3pEPcFtR5SY2QfR7BI8",
+      authDomain: "unity-law-dashboard.firebaseapp.com",
+      projectId: "unity-law-dashboard",
+      storageBucket: "unity-law-dashboard.firebasestorage.app",
+      messagingSenderId: "234036730590",
+      appId: "1:234036730590:web:c7941975325ffdf8b4004f",
+      measurementId: "G-ZMX98RTPP9"
+    };
+
+    const KEY = 'unity-law_doj_cases_v1', LOGKEY = 'unity-law_doj_log_v1', PROFILE = 'unity-law_doj_profile_v1';
     const statuses = ['Open', 'Under Review', 'Court Scheduled', 'Closed'];
     const types = ['Criminal', 'Civil Dispute', 'Business Compliance', 'Property', 'Name Change', 'Marriage / Family', 'Contract', 'Government Review', 'Other'];
     const priorities = ['Low', 'Medium', 'High'];
+    let cases = load(KEY, []), logs = load(LOGKEY, []), profile = load(PROFILE, {name:'DOJ Staff',rank:'Department of Justice'}),
+        page = 'dashboard', searchText = '', statusFilter = 'All', typeFilter = 'All', selectedCase = null, pendingImages = [];
 
-    let cases = load(KEY, []), 
-        logs = load(LOGKEY, []), 
-        profile = load(PROFILE, { name: 'DOJ Staff', rank: 'Department of Justice' }), 
-        page = 'dashboard', 
-        searchText = '', 
-        statusFilter = 'All', 
-        typeFilter = 'All', 
-        selectedCase = null, 
-        pendingImages = [];
+    let auth = null, db = null, currentStaff = null, cloudReady = false, cloudUnsubscribe = null, saveQueue = Promise.resolve();
+    const firebaseConfigured = firebaseConfig.apiKey !== 'PASTE_API_KEY_HERE' && firebaseConfig.projectId !== 'PASTE_PROJECT_ID_HERE' && firebaseConfig.appId !== 'PASTE_APP_ID_HERE';
 
-    function load(k, f) {
-      try { 
-        return JSON.parse(localStorage.getItem(k)) ?? f; 
-      } catch (e) { 
-        return f; 
-      }
-    }
+    function load(k, fallback) { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch (e) { return fallback; } }
+    function cacheLocally() { localStorage.setItem(KEY, JSON.stringify(cases)); localStorage.setItem(LOGKEY, JSON.stringify(logs)); localStorage.setItem(PROFILE, JSON.stringify(profile)); }
+    function setAuthMessage(message, error=false) { const el=document.getElementById('authmessage'); if(el){el.textContent=message;el.style.color=error?'#ef7777':'#e9b45d';} }
+    function setCloudStatus(message, error=false) { const el=document.getElementById('cloudstatus'); if(el){el.textContent=message;el.style.color=error?'#ef7777':'#58c69b';} }
 
+    // The portal state is stored in Firestore, so signed-in staff see the same cases/logs.
+    // This single-document approach is suitable for a small RP DOJ team; avoid simultaneous bulk edits.
+    const stateRef = () => db.collection('portal').doc('main');
     function save() {
-      localStorage.setItem(KEY, JSON.stringify(cases));
-      localStorage.setItem(LOGKEY, JSON.stringify(logs));
-      localStorage.setItem(PROFILE, JSON.stringify(profile));
+      cacheLocally();
+      if (!currentStaff || !db || !cloudReady) return;
+      // Queue writes so rapid actions are not silently dropped while another save is in flight.
+      saveQueue = saveQueue.then(() => stateRef().set({cases, logs, profile, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentStaff.email || currentStaff.uid}, {merge:true}))
+        .then(()=>setCloudStatus('☁ Synced'))
+        .catch(err=>{console.error(err);setCloudStatus('Cloud save failed',true);toast('Cloud save failed. Check Firebase rules and connection.');});
     }
 
-    function esc(s = '') {
-      return String(s).replace(/[&<>"']/g, c => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-      }[c]));
-    }
-
-    function date(v) {
-      if (!v) return '—';
-      try {
-        return new Date(v + 'T12:00:00').toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' });
-      } catch {
-        return v;
+    function initialiseFirebase() {
+      if (!firebaseConfigured) {
+        setAuthMessage('Firebase is not configured yet. Complete the setup and paste your Web App config into firebaseConfig in index.html.', true);
+        return;
       }
+      try { firebase.initializeApp(firebaseConfig); auth=firebase.auth(); db=firebase.firestore(); }
+      catch(err) { console.error(err); setAuthMessage('Firebase could not start: '+err.message,true); return; }
+      auth.onAuthStateChanged(async user => {
+        currentStaff=user||null;
+        const gate=document.getElementById('authgate'), app=document.getElementById('portalApp');
+        if (cloudUnsubscribe) { cloudUnsubscribe(); cloudUnsubscribe=null; }
+        cloudReady=false;
+        if (!user) {
+          app.style.display='none'; gate.style.display='flex';
+          setCloudStatus('Signed out'); return;
+        }
+        gate.style.display='none'; app.style.display='grid';
+        setCloudStatus('Loading shared records…');
+        try {
+          cloudUnsubscribe=stateRef().onSnapshot(async snap=>{
+            if (snap.exists) {
+              const data=snap.data();
+              cases=Array.isArray(data.cases)?data.cases:[];
+              logs=Array.isArray(data.logs)?data.logs:[];
+              profile=data.profile && typeof data.profile==='object'?data.profile:{name:user.displayName||user.email||'DOJ Staff',rank:'Department of Justice'};
+              cacheLocally(); cloudReady=true; setCloudStatus('☁ Synced'); render();
+            } else {
+              // First signed-in staff member seeds the shared document from this browser's existing local data.
+              const legacy={cases:load(KEY,[]),logs:load(LOGKEY,[]),profile:load(PROFILE,{name:user.displayName||user.email||'DOJ Staff',rank:'Department of Justice'})};
+              try { await stateRef().create({...legacy,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:user.email||user.uid}); }
+              catch(createErr) { if(createErr.code!=='already-exists') throw createErr; }
+            }
+          }, err=>{console.error(err);setCloudStatus('Cloud access denied',true);toast('Cannot load shared records. Check Firestore security rules.');});
+        } catch(err) { console.error(err); setCloudStatus('Cloud connection failed',true); }
+      });
     }
 
-    function now() {
-      return new Date().toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' });
-    }
+    document.getElementById('loginForm').addEventListener('submit', async e=>{
+      e.preventDefault();
+      if(!auth){setAuthMessage('Set up Firebase and replace the placeholder config first.',true);return;}
+      const btn=document.getElementById('loginBtn'); btn.disabled=true; btn.textContent='Signing in…';
+      try { await auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value.trim(),document.getElementById('loginPassword').value); setAuthMessage('Signed in. Loading shared case files…'); }
+      catch(err) { console.error(err); setAuthMessage('Sign-in failed. Check your email/password and confirm the staff account exists in Firebase Authentication.',true); }
+      finally { btn.disabled=false; btn.textContent='Sign in securely'; }
+    });
+    async function signOutStaff(){ if(auth) await auth.signOut(); }
 
-    function id() {
-      return 'DOJ-' + new Date().getFullYear() + '-' + Math.random().toString(36).slice(2, 7).toUpperCase();
-    }
+    function esc(s='') { return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function date(v) { if(!v)return '—'; try{return new Date(v+'T12:00:00').toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'});}catch{return v;} }
+    function now() { return new Date().toLocaleString('en-ZA',{dateStyle:'medium',timeStyle:'short'}); }
+    function id() { return 'DOJ-'+new Date().getFullYear()+'-'+Math.random().toString(36).slice(2,7).toUpperCase(); }
+    function log(action,caseId='',detail='') { logs.unshift({id:Date.now()+Math.random(),action,caseId,detail,by:currentStaff?.email||profile.name,at:now()}); logs=logs.slice(0,500); save(); }
+    function toast(msg) { document.getElementById('toastroot').innerHTML=`<div class="toast">${esc(msg)}</div>`; setTimeout(()=>document.getElementById('toastroot').innerHTML='',2600); }
+    function statusTag(s) { let cl={'Open':'status-open','Under Review':'status-review','Court Scheduled':'status-court','Closed':'status-closed'}[s]||'status-closed';return `<span class="tag ${cl}">${esc(s)}</span>`; }
+    function priority(s) { return `<span class="priority-${String(s).toLowerCase()}">● ${esc(s||'Medium')}</span>`; }
+    function filtered() { return cases.filter(c=>(statusFilter==='All'||c.status===statusFilter)&&(typeFilter==='All'||c.type===typeFilter)&&JSON.stringify(c).toLowerCase().includes(searchText.toLowerCase())).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')); }
+    function setPage(p) { page=p;document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.getElementById('crumb').textContent=p.replace(/-/g,' ').toUpperCase();document.getElementById('sidebar').classList.remove('open');render(); }
+    document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.page)));
+    document.getElementById('mobilemenu').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
 
-    function log(action, caseId = '', detail = '') {
-      logs.unshift({ id: Date.now() + Math.random(), action, caseId, detail, by: profile.name, at: now() });
-      logs = logs.slice(0, 500);
-      save();
-    }
-
-    function toast(msg) {
-      document.getElementById('toastroot').innerHTML = `<div class="toast">${esc(msg)}</div>`;
-      setTimeout(() => document.getElementById('toastroot').innerHTML = '', 2600);
-    }
-
-    function statusTag(s) {
-      let cl = {
-        'Open': 'status-open',
-        'Under Review': 'status-review',
-        'Court Scheduled': 'status-court',
-        'Closed': 'status-closed'
-      }[s] || 'status-closed';
-      return `<span class="tag ${cl}">${esc(s)}</span>`;
-    }
-
-    function priority(s) {
-      return `<span class="priority-${String(s).toLowerCase()}">● ${esc(s || 'Medium')}</span>`;
-    }
-
-    function filtered() {
-      return cases.filter(c => 
-        (statusFilter === 'All' || c.status === statusFilter) && 
-        (typeFilter === 'All' || c.type === typeFilter) && 
-        JSON.stringify(c).toLowerCase().includes(searchText.toLowerCase())
-      ).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
-    }
-
-    function setPage(p) {
-      page = p;
-      document.querySelectorAll('[data-page]').forEach(b => b.classList.toggle('active', b.dataset.page === p));
-      document.getElementById('crumb').textContent = p.replace(/-/g, ' ').toUpperCase();
-      document.getElementById('sidebar').classList.remove('open');
-      render();
-    }
-
-    document.querySelectorAll('[data-page]').forEach(b => b.onclick = () => setPage(b.dataset.page));
-    document.getElementById('mobilemenu').onclick = () => document.getElementById('sidebar').classList.toggle('open');
-
+    // Keep all existing portal functions below this line.
     function head(k, title, sub, btn = '') {
       return `<div class="pagehead"><div><div class="eyebrow">${k}</div><h1>${title}</h1><p class="sub">${sub}</p></div>${btn}</div>`;
     }
@@ -1530,52 +1553,23 @@
     }
 
     function clearAll() {
-      if (!confirm('Delete ALL local cases, images and activity records? Export a backup first. This cannot be undone.')) return;
+      if (!confirm('Delete ALL shared case files and activity records for every DOJ staff member? Export a backup first. This cannot be undone.')) return;
       cases = [];
       logs = [];
       save();
       render();
-      toast('Local case data cleared');
+      toast('Shared case data cleared');
     }
+
 
     function importBackup(e) {
-      let file = e.target.files[0];
-      if (!file) return;
-      let reader = new FileReader();
-      reader.onload = () => {
-        try {
-          let data = JSON.parse(reader.result);
-          if (!Array.isArray(data.cases)) throw Error('Invalid backup');
-          if (!confirm(`Import ${data.cases.length} case files? This replaces the current local cases and log.`)) return;
-          cases = data.cases;
-          logs = Array.isArray(data.logs) ? data.logs : [];
-          if (data.profile) profile = data.profile;
-          save();
-          render();
-          toast('Backup imported');
-        } catch (err) {
-          alert('Could not import this backup. Please select a valid DOJ JSON backup.');
-        }
-      };
-      reader.readAsText(file);
+      let file=e.target.files[0]; if(!file)return;
+      let reader=new FileReader(); reader.onload=()=>{try{let data=JSON.parse(reader.result);if(!Array.isArray(data.cases))throw Error('Invalid backup');if(!confirm(`Import ${data.cases.length} case files? This replaces the shared cases and activity log for all DOJ staff.`))return;cases=data.cases;logs=Array.isArray(data.logs)?data.logs:[];if(data.profile)profile=data.profile;save();render();toast('Backup imported and syncing');}catch(err){alert('Could not import this backup. Please select a valid DOJ JSON backup.')}}; reader.readAsText(file);
     }
+    document.addEventListener('submit',e=>{if(e.target.id==='profileForm'){e.preventDefault();let f=new FormData(e.target);profile={name:f.get('name').trim()||'DOJ Staff',rank:f.get('rank').trim()||'Department of Justice'};save();render();toast('Profile saved and syncing');}});
+    // Do not render private case data until Firebase confirms an authenticated staff session.
+    initialiseFirebase();
 
-    document.addEventListener('submit', e => {
-      if (e.target.id === 'profileForm') {
-        e.preventDefault();
-        let f = new FormData(e.target);
-        profile = {
-          name: f.get('name').trim() || 'DOJ Staff',
-          rank: f.get('rank').trim() || 'Department of Justice'
-        };
-        save();
-        render();
-        toast('Profile saved');
-      }
-    });
-
-    // Start with an empty case register; no fabricated citizen/case records.
-    render();
   </script>
 </body>
 </html>

@@ -766,6 +766,8 @@
     }
 
     @media (max-width: 700px) {
+      html { -webkit-text-size-adjust: 100%; }
+      body { font-size: 14px; overflow-x: hidden; }
       .app {
         display: block;
       }
@@ -834,7 +836,46 @@
       }
       .topright {
         gap: 7px;
+        min-width: 0;
       }
+      .topbar > div:first-child { min-width: 0; gap: 8px !important; }
+      .crumb { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .cloudstatus { font-size: 10px; max-width: 92px; line-height: 1.2; margin-right: 0; }
+      #staffname { display: none; }
+      #signoutBtn { padding: 7px 8px; white-space: nowrap; }
+      .main, .content, .panel, .card, .modal, .modalback { min-width: 0; }
+      .content > *, .layout > *, .stats > *, .reportgrid > * { min-width: 0; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stat strong { overflow-wrap: anywhere; }
+      .panel { overflow: hidden; }
+      .tablewrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      table { min-width: 620px; }
+      .toolbar, .actions, .filters { gap: 8px; }
+      .toolbar { flex-wrap: wrap; }
+      .toolbar button, .pagehead button, .actions button { min-height: 40px; }
+      .search { width: 100%; }
+      input, select, textarea { max-width: 100%; font-size: 16px; }
+      .modalback { padding: 8px; align-items: flex-end; }
+      .modal { width: 100%; max-height: 94dvh; border-radius: 16px 16px 10px 10px; }
+      .modalhead h2 { font-size: 18px; }
+      .formbody { padding: 14px; }
+      .formfoot { padding: 12px 14px; flex-wrap: wrap; }
+      .formfoot button { flex: 1 1 120px; min-height: 42px; }
+      .field input, .field select, .field textarea { width: 100%; min-height: 44px; }
+      .authgate { padding: 14px; }
+      .authcard { padding: 22px 18px; }
+    }
+
+    @media (max-width: 390px) {
+      .content { padding: 14px 10px; }
+      .topbar { padding: 0 10px; }
+      .stats { gap: 7px; }
+      .stat { padding: 10px; }
+      .stat strong { font-size: 21px; }
+      .brand strong { font-size: 13px; }
+      .brand small { letter-spacing: 1px; }
+      .cloudstatus { display: none; }
+      .pagehead h1 { font-size: 22px; }
     }
 
     .authgate{position:fixed;inset:0;z-index:99999;background:#0c0e11;display:flex;align-items:center;justify-content:center;padding:22px}

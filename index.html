@@ -961,6 +961,7 @@
           <button data-page="cases"><span class="ico">▤</span>Case files</button>
           <button data-page="retainers"><span class="ico">▧</span>Retainer agreements</button>
           <button data-page="businesses"><span class="ico">▣</span>Business registrations</button>
+          <button data-page="staff"><span class="ico">♙</span>Staff list</button>
           <button data-page="evidence"><span class="ico">▧</span>Evidence register</button>
           <button data-page="activity"><span class="ico">◷</span>Activity log</button>
         </nav>
@@ -1013,18 +1014,18 @@
       measurementId: "G-ZMX98RTPP9"
     };
 
-    const KEY = 'unity-law_doj_cases_v1', LOGKEY = 'unity-law_doj_log_v1', PROFILE = 'unity-law_doj_profile_v1', RETAINERKEY = 'unity-law_doj_retainers_v1', BUSINESSKEY = 'unity-law_doj_businesses_v1';
+    const KEY = 'unity-law_doj_cases_v1', LOGKEY = 'unity-law_doj_log_v1', PROFILE = 'unity-law_doj_profile_v1', RETAINERKEY = 'unity-law_doj_retainers_v1', BUSINESSKEY = 'unity-law_doj_businesses_v1', STAFFKEY = 'unity-law_doj_staff_v1';
     const statuses = ['Open', 'Under Review', 'Court Scheduled', 'Closed'];
     const types = ['Criminal', 'Civil Dispute', 'Business Compliance', 'Property', 'Name Change', 'Marriage / Family', 'Contract', 'Government Review', 'Other'];
     const priorities = ['Low', 'Medium', 'High'];
-    let cases = load(KEY, []), logs = load(LOGKEY, []), retainers = load(RETAINERKEY, []), businesses = load(BUSINESSKEY, []), profile = load(PROFILE, {name:'DOJ Staff',rank:'Department of Justice'}),
+    let cases = load(KEY, []), logs = load(LOGKEY, []), retainers = load(RETAINERKEY, []), businesses = load(BUSINESSKEY, []), staffMembers = load(STAFFKEY, []), profile = load(PROFILE, {name:'DOJ Staff',rank:'Department of Justice'}),
         page = 'dashboard', searchText = '', statusFilter = 'All', typeFilter = 'All', selectedCase = null, pendingImages = [];
 
     let auth = null, db = null, currentStaff = null, cloudReady = false, cloudUnsubscribe = null, saveQueue = Promise.resolve();
     const firebaseConfigured = firebaseConfig.apiKey !== 'PASTE_API_KEY_HERE' && firebaseConfig.projectId !== 'PASTE_PROJECT_ID_HERE' && firebaseConfig.appId !== 'PASTE_APP_ID_HERE';
 
     function load(k, fallback) { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch (e) { return fallback; } }
-    function cacheLocally() { localStorage.setItem(KEY, JSON.stringify(cases)); localStorage.setItem(LOGKEY, JSON.stringify(logs)); localStorage.setItem(RETAINERKEY, JSON.stringify(retainers)); localStorage.setItem(BUSINESSKEY, JSON.stringify(businesses)); localStorage.setItem(PROFILE, JSON.stringify(profile)); }
+    function cacheLocally() { localStorage.setItem(KEY, JSON.stringify(cases)); localStorage.setItem(LOGKEY, JSON.stringify(logs)); localStorage.setItem(RETAINERKEY, JSON.stringify(retainers)); localStorage.setItem(BUSINESSKEY, JSON.stringify(businesses)); localStorage.setItem(STAFFKEY, JSON.stringify(staffMembers)); localStorage.setItem(PROFILE, JSON.stringify(profile)); }
     function setAuthMessage(message, error=false) { const el=document.getElementById('authmessage'); if(el){el.textContent=message;el.style.color=error?'#ef7777':'#e9b45d';} }
     function setCloudStatus(message, error=false) { const el=document.getElementById('cloudstatus'); if(el){el.textContent=message;el.style.color=error?'#ef7777':'#58c69b';} }
 
@@ -1035,7 +1036,7 @@
       cacheLocally();
       if (!currentStaff || !db || !cloudReady) return;
       // Queue writes so rapid actions are not silently dropped while another save is in flight.
-      saveQueue = saveQueue.then(() => stateRef().set({cases, logs, retainers, businesses, profile, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentStaff.email || currentStaff.uid}, {merge:true}))
+      saveQueue = saveQueue.then(() => stateRef().set({cases, logs, retainers, businesses, staffMembers, profile, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentStaff.email || currentStaff.uid}, {merge:true}))
         .then(()=>setCloudStatus('☁ Synced'))
         .catch(err=>{console.error(err);setCloudStatus('Cloud save failed',true);toast('Cloud save failed. Check Firebase rules and connection.');});
     }
@@ -1066,11 +1067,12 @@
               logs=Array.isArray(data.logs)?data.logs:[];
               retainers=Array.isArray(data.retainers)?data.retainers:[];
               businesses=Array.isArray(data.businesses)?data.businesses:[];
+              staffMembers=Array.isArray(data.staffMembers)?data.staffMembers:[];
               profile=data.profile && typeof data.profile==='object'?data.profile:{name:user.displayName||user.email||'DOJ Staff',rank:'Department of Justice'};
               cacheLocally(); cloudReady=true; setCloudStatus('☁ Synced'); render();
             } else {
               // First signed-in staff member seeds the shared document from this browser's existing local data.
-              const legacy={cases:load(KEY,[]),logs:load(LOGKEY,[]),retainers:load(RETAINERKEY,[]),businesses:load(BUSINESSKEY,[]),profile:load(PROFILE,{name:user.displayName||user.email||'DOJ Staff',rank:'Department of Justice'})};
+              const legacy={cases:load(KEY,[]),logs:load(LOGKEY,[]),retainers:load(RETAINERKEY,[]),businesses:load(BUSINESSKEY,[]),staffMembers:load(STAFFKEY,[]),profile:load(PROFILE,{name:user.displayName||user.email||'DOJ Staff',rank:'Department of Justice'})};
               try { await stateRef().set({...legacy,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:user.email||user.uid}); }
               catch(createErr) { if(createErr.code!=='already-exists') throw createErr; }
             }
@@ -1139,6 +1141,7 @@
       else if (page === 'cases') root.innerHTML = casesPage();
       else if (page === 'retainers') root.innerHTML = retainersPage();
       else if (page === 'businesses') root.innerHTML = businessesPage();
+      else if (page === 'staff') root.innerHTML = staffPage();
       else if (page === 'evidence') root.innerHTML = evidencePage();
       else if (page === 'activity') root.innerHTML = activityPage();
       else if (page === 'reports') root.innerHTML = reportsPage();
@@ -1157,7 +1160,7 @@
           ${stat('Expired / ended','Not active',retainers.length-active,'◷')}
         </div>
         <section class="panel" style="margin-top:18px">
-          <div class="panelhead"><div><h2>Agreement register</h2><p>Store the agreement details, fee, dates and a link to the signed document.</p></div></div>
+          <div class="panelhead"><div><h2>Agreement register</h2><p>Store the agreement details, fee, dates and a link to an image of the signed agreement.</p></div></div>
           ${!list.length ? `<div class="empty"><b>No retainer agreements yet</b>Add an agreement to start your register.</div>` : `<div class="tablewrap"><table><thead><tr><th>Agreement</th><th>Client / Business</th><th>Retainer fee</th><th>Start date</th><th>Renewal date</th><th>Status</th><th>Actions</th></tr></thead><tbody>${list.map(r=>`<tr><td><b>${esc(r.title)}</b><div class="muted">${esc(r.id)}</div></td><td>${esc(r.client)}</td><td>${esc(r.currency||'R')} ${esc(r.fee||'—')}<div class="muted">${esc(r.frequency||'')}</div></td><td>${esc(r.startDate||'—')}</td><td>${esc(r.renewalDate||'—')}</td><td>${statusTag(r.status||'Active')}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" onclick="viewRetainer('${r.id}')">View</button><button class="btn small" onclick="openRetainerForm('${r.id}')">Edit</button><button class="btn small danger" onclick="deleteRetainer('${r.id}')">Delete</button></div></td></tr>`).join('')}</tbody></table></div>`}
         </section>`;
     }
@@ -1174,7 +1177,7 @@
         <div class="field"><label>STATUS</label><select name="status">${['Active','Pending Signature','Paused','Expired','Terminated'].map(x=>`<option ${r.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
         <div class="field"><label>START DATE</label><input type="date" name="startDate" value="${esc(r.startDate)}"></div>
         <div class="field"><label>RENEWAL / END DATE</label><input type="date" name="renewalDate" value="${esc(r.renewalDate)}"></div>
-        <div class="field span2"><label>SIGNED AGREEMENT LINK</label><input type="url" name="documentUrl" value="${esc(r.documentUrl)}" placeholder="https://... (Google Drive / document link)"><small class="muted">Use a link accessible to authorised DOJ staff. Do not paste passwords or private access tokens.</small></div>
+        <div class="field span2"><label>AGREEMENT IMAGE LINK</label><input type="url" name="documentUrl" value="${esc(r.documentUrl)}" placeholder="https://... (direct image link)"><small class="muted">Paste a direct link to the agreement image (for example, a hosted JPG or PNG) that authorised DOJ staff can access.</small></div>
         <div class="field span2"><label>TERMS / SERVICES INCLUDED</label><textarea name="terms" maxlength="12000" placeholder="Scope of services, payment terms, responsibilities, cancellation terms…">${esc(r.terms)}</textarea></div>
         <div class="field span2"><label>INTERNAL NOTES</label><textarea name="notes" maxlength="6000" placeholder="Payment tracking, reminders, internal notes…">${esc(r.notes)}</textarea></div>
         </div></div><div class="formfoot"><button type="button" class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" type="submit">Save agreement</button></div></form></section></div>`;
@@ -1190,7 +1193,7 @@
 
     function viewRetainer(retainerId) {
       const r=retainers.find(x=>x.id===retainerId); if(!r)return;
-      document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">RETAINER AGREEMENT</div><h2>${esc(r.title)}</h2><div class="muted">${esc(r.id)} · ${esc(r.status)}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="formgrid"><div class="field"><label>CLIENT / BUSINESS</label><p>${esc(r.client)}</p></div><div class="field"><label>CONTACT</label><p>${esc(r.contact||'—')}</p></div><div class="field"><label>FEE</label><p>${esc(r.currency||'R')} ${esc(r.fee)} / ${esc(r.frequency||'')}</p></div><div class="field"><label>DATES</label><p>${esc(r.startDate||'—')} to ${esc(r.renewalDate||'No end date')}</p></div><div class="field span2"><label>TERMS / SERVICES</label><p style="white-space:pre-wrap">${esc(r.terms||'No terms entered.')}</p></div><div class="field span2"><label>INTERNAL NOTES</label><p style="white-space:pre-wrap">${esc(r.notes||'No notes.')}</p></div>${r.documentUrl?`<div class="field span2"><label>AGREEMENT DOCUMENT</label><p><a href="${esc(r.documentUrl)}" target="_blank" rel="noopener">Open linked agreement ↗</a></p></div>`:''}</div></div><div class="formfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openRetainerForm('${r.id}')">Edit agreement</button></div></section></div>`;
+      document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">RETAINER AGREEMENT</div><h2>${esc(r.title)}</h2><div class="muted">${esc(r.id)} · ${esc(r.status)}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="formgrid"><div class="field"><label>CLIENT / BUSINESS</label><p>${esc(r.client)}</p></div><div class="field"><label>CONTACT</label><p>${esc(r.contact||'—')}</p></div><div class="field"><label>FEE</label><p>${esc(r.currency||'R')} ${esc(r.fee)} / ${esc(r.frequency||'')}</p></div><div class="field"><label>DATES</label><p>${esc(r.startDate||'—')} to ${esc(r.renewalDate||'No end date')}</p></div><div class="field span2"><label>TERMS / SERVICES</label><p style="white-space:pre-wrap">${esc(r.terms||'No terms entered.')}</p></div><div class="field span2"><label>INTERNAL NOTES</label><p style="white-space:pre-wrap">${esc(r.notes||'No notes.')}</p></div>${r.documentUrl?`<div class="field span2"><label>AGREEMENT IMAGE</label><p><a href="${esc(r.documentUrl)}" target="_blank" rel="noopener">Open full image ↗</a></p><a href="${esc(r.documentUrl)}" target="_blank" rel="noopener"><img src="${esc(r.documentUrl)}" alt="Retainer agreement image" style="display:block;max-width:100%;max-height:420px;object-fit:contain;border:1px solid var(--line);border-radius:10px;margin-top:10px" onerror="this.style.display='none'"></a></div>`:''}</div></div><div class="formfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openRetainerForm('${r.id}')">Edit agreement</button></div></section></div>`;
     }
 
     function deleteRetainer(retainerId) {
@@ -1232,7 +1235,7 @@
         <div class="field"><label>REGISTRATION DATE</label><input type="date" name="registeredDate" value="${esc(b.registeredDate)}"></div>
         <div class="field"><label>RENEWAL / EXPIRY DATE</label><input type="date" name="renewalDate" value="${esc(b.renewalDate)}"></div>
         <div class="field span2"><label>BUSINESS DESCRIPTION / ACTIVITIES</label><textarea name="description" maxlength="6000" placeholder="Describe what the business does and its services…">${esc(b.description)}</textarea></div>
-        <div class="field span2"><label>DOCUMENT / APPLICATION LINK</label><input type="url" name="documentUrl" value="${esc(b.documentUrl)}" placeholder="https://... (application or supporting document)"><small class="muted">Use a link accessible to authorised DOJ staff.</small></div>
+        <div class="field span2"><label>REGISTRATION IMAGE LINK</label><input type="url" name="documentUrl" value="${esc(b.documentUrl)}" placeholder="https://... (direct image link)"><small class="muted">Paste a direct link to an image of the registration document (JPG or PNG) that authorised DOJ staff can access.</small></div>
         <div class="field span2"><label>INTERNAL NOTES</label><textarea name="notes" maxlength="6000" placeholder="Payment confirmation, compliance notes, review decision…">${esc(b.notes)}</textarea></div>
         </div></div><div class="formfoot"><button type="button" class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" type="submit">Save business record</button></div></form></section></div>`;
       document.getElementById('businessForm').onsubmit = saveBusiness;
@@ -1247,7 +1250,7 @@
 
     function viewBusiness(businessId) {
       const b=businesses.find(x=>x.id===businessId); if(!b)return;
-      document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">BUSINESS REGISTRATION</div><h2>${esc(b.name)}</h2><div class="muted">${esc(b.registrationNo||b.id)} · ${esc(b.status)}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="formgrid"><div class="field"><label>OWNER / REPRESENTATIVE</label><p>${esc(b.owner)}</p></div><div class="field"><label>CONTACT</label><p>${esc(b.contact||'—')}</p></div><div class="field"><label>BUSINESS TYPE</label><p>${esc(b.type||'Other')}</p></div><div class="field"><label>REGISTRATION FEE</label><p>${esc(b.currency||'R')} ${esc(b.fee)} · ${esc(b.feeFrequency||'')}</p></div><div class="field"><label>APPLICATION DATE</label><p>${esc(b.applicationDate||'—')}</p></div><div class="field"><label>REGISTERED DATE</label><p>${esc(b.registeredDate||'—')}</p></div><div class="field"><label>RENEWAL / EXPIRY</label><p>${esc(b.renewalDate||'—')}</p></div><div class="field span2"><label>BUSINESS DESCRIPTION</label><p style="white-space:pre-wrap">${esc(b.description||'No description entered.')}</p></div><div class="field span2"><label>INTERNAL NOTES</label><p style="white-space:pre-wrap">${esc(b.notes||'No notes.')}</p></div>${b.documentUrl?`<div class="field span2"><label>APPLICATION DOCUMENT</label><p><a href="${esc(b.documentUrl)}" target="_blank" rel="noopener">Open linked document ↗</a></p></div>`:''}</div></div><div class="formfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openBusinessForm('${b.id}')">Edit business</button></div></section></div>`;
+      document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">BUSINESS REGISTRATION</div><h2>${esc(b.name)}</h2><div class="muted">${esc(b.registrationNo||b.id)} · ${esc(b.status)}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="formgrid"><div class="field"><label>OWNER / REPRESENTATIVE</label><p>${esc(b.owner)}</p></div><div class="field"><label>CONTACT</label><p>${esc(b.contact||'—')}</p></div><div class="field"><label>BUSINESS TYPE</label><p>${esc(b.type||'Other')}</p></div><div class="field"><label>REGISTRATION FEE</label><p>${esc(b.currency||'R')} ${esc(b.fee)} · ${esc(b.feeFrequency||'')}</p></div><div class="field"><label>APPLICATION DATE</label><p>${esc(b.applicationDate||'—')}</p></div><div class="field"><label>REGISTERED DATE</label><p>${esc(b.registeredDate||'—')}</p></div><div class="field"><label>RENEWAL / EXPIRY</label><p>${esc(b.renewalDate||'—')}</p></div><div class="field span2"><label>BUSINESS DESCRIPTION</label><p style="white-space:pre-wrap">${esc(b.description||'No description entered.')}</p></div><div class="field span2"><label>INTERNAL NOTES</label><p style="white-space:pre-wrap">${esc(b.notes||'No notes.')}</p></div>${b.documentUrl?`<div class="field span2"><label>REGISTRATION IMAGE</label><p><a href="${esc(b.documentUrl)}" target="_blank" rel="noopener">Open full image ↗</a></p><a href="${esc(b.documentUrl)}" target="_blank" rel="noopener"><img src="${esc(b.documentUrl)}" alt="Business registration image" style="display:block;max-width:100%;max-height:420px;object-fit:contain;border:1px solid var(--line);border-radius:10px;margin-top:10px" onerror="this.style.display='none'"></a></div>`:''}</div></div><div class="formfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openBusinessForm('${b.id}')">Edit business</button></div></section></div>`;
     }
 
     function deleteBusiness(businessId) {
@@ -1350,6 +1353,52 @@
           ${activityList(logs)}
         </section>
       `;
+    }
+
+    const DOJ_RANKS = ['Attorney General', 'Deputy Attorney General', 'Lawyer', 'Associate'];
+
+    function staffRankOrder(rank) {
+      // Also recognise older/saved values such as "01 — Attorney General".
+      const cleaned = String(rank || '').replace(/^\s*0?[1-4]\s*[—–-]\s*/, '').trim().toLowerCase();
+      return DOJ_RANKS.findIndex(r => r.toLowerCase() === cleaned);
+    }
+
+    function staffPage() {
+      const ordered = [...staffMembers].sort((a,b)=> {
+        const rankDifference = staffRankOrder(a.rank) - staffRankOrder(b.rank);
+        return rankDifference || String(a.name || '').localeCompare(String(b.name || ''));
+      });
+      return `
+        ${head('DEPARTMENT MANAGEMENT', 'Staff list', 'Manage Unity Law DOJ members and their official ranks.', `<button class="btn primary" onclick="openStaffForm()">＋ Add staff member</button>`)}
+        <div class="stats">
+          ${stat('Total staff','All listed members',staffMembers.length,'♙')}
+          ${stat('Senior leadership','Attorney General + Deputy',staffMembers.filter(x=>x.rank==='Attorney General'||x.rank==='Deputy Attorney General').length,'⚖')}
+          ${stat('Legal team','Lawyers + Associates',staffMembers.filter(x=>x.rank==='Lawyer'||x.rank==='Associate').length,'▤')}
+        </div>
+        <section class="panel" style="margin-top:18px">
+          <div class="panelhead"><div><h2>Department members</h2><p>Add people to the list or remove members who leave the department.</p></div></div>
+          ${!ordered.length ? `<div class="empty"><b>No staff members added yet</b>Select “Add staff member” to build the DOJ staff list.</div>` : `<div class="tablewrap"><table><thead><tr><th>Name</th><th>Rank</th><th>Contact / Callsign</th><th>Date added</th><th>Actions</th></tr></thead><tbody>${ordered.map(m=>`<tr><td><b>${esc(m.name)}</b></td><td>${statusTag(m.rank)}</td><td>${esc(m.contact||'—')}</td><td>${esc(m.addedAt||'—')}</td><td><button class="btn small danger" onclick="removeStaff('${m.id}')">Remove</button></td></tr>`).join('')}</tbody></table></div>`}
+        </section>
+        <section class="panel" style="margin-top:18px"><div class="panelhead"><div><h2>Official rank structure</h2><p>Staff members can be assigned one of these four ranks.</p></div></div><div class="stats">${DOJ_RANKS.map((r,i)=>`<div class="stat"><div class="statlabel">RANK 0${i+1}</div><div class="statvalue" style="font-size:16px">${esc(r)}</div><div class="statnote">${staffMembers.filter(m=>m.rank===r).length} member(s)</div></div>`).join('')}</div></section>
+      `;
+    }
+
+    function openStaffForm() {
+      document.getElementById('modalroot').innerHTML = `<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">DEPARTMENT MANAGEMENT</div><h2>Add staff member</h2></div><button class="close" onclick="closeModal()">✕</button></div><form id="staffForm"><div class="formbody"><div class="formgrid"><div class="field span2"><label>FULL NAME</label><input name="name" required maxlength="100" placeholder="Enter staff member's name"></div><div class="field span2"><label>RANK</label><select name="rank" required>${DOJ_RANKS.map((r,i)=>`<option value="${esc(r)}">0${i+1} — ${esc(r)}</option>`).join('')}</select></div><div class="field span2"><label>CONTACT OR CALLSIGN (OPTIONAL)</label><input name="contact" maxlength="150" placeholder="Discord name, callsign or contact details"></div></div></div><div class="formfoot"><button type="button" class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" type="submit">Add staff member</button></div></form></section></div>`;
+      document.getElementById('staffForm').onsubmit = saveStaff;
+    }
+
+    function saveStaff(e) {
+      e.preventDefault(); const f=new FormData(e.target); const name=String(f.get('name')||'').trim();
+      if(!name) return;
+      staffMembers.unshift({id:'STF-'+Date.now()+'-'+Math.random().toString(36).slice(2,6).toUpperCase(),name,rank:f.get('rank'),contact:String(f.get('contact')||'').trim(),addedAt:new Date().toLocaleDateString('en-ZA'),createdAt:new Date().toISOString()});
+      save(); log('Added DOJ staff member','',name+' — '+f.get('rank')); closeModal(); render(); toast('Staff member added.');
+    }
+
+    function removeStaff(staffId) {
+      const member=staffMembers.find(m=>m.id===staffId); if(!member)return;
+      if(!confirm(`Remove ${member.name} from the DOJ staff list?`))return;
+      staffMembers=staffMembers.filter(m=>m.id!==staffId); save(); log('Removed DOJ staff member','',member.name+' — '+member.rank); render(); toast('Staff member removed.');
     }
 
     function evidencePage() {

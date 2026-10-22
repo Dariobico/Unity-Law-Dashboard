@@ -1,1153 +1,1582 @@
-```html
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>STF | Special Task Force</title>
-
-<link rel="icon" type="image/png" href="stf-logo.png">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-
-<style>
-:root {
-    --bg: #080a0d;
-    --bg2: #0d1014;
-    --panel: rgba(18, 22, 27, 0.88);
-    --panel2: #11151a;
-    --border: rgba(255,255,255,0.08);
-    --text: #f2f4f5;
-    --muted: #8f989f;
-    --accent: #bfc4c8;
-    --accent2: #ffffff;
-    --danger: #9f2525;
-    --green: #3e8b61;
-    --shadow: 0 20px 60px rgba(0,0,0,.45);
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    scroll-behavior: smooth;
-}
-
-body {
-    font-family: "Inter", sans-serif;
-    background:
-        radial-gradient(circle at 50% -10%, rgba(255,255,255,.07), transparent 35%),
-        linear-gradient(180deg, #07090b, #0b0e12 45%, #07090b);
-    color: var(--text);
-    overflow-x: hidden;
-}
-
-body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    opacity: .035;
-    background-image:
-        linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px);
-    background-size: 45px 45px;
-}
-
-/* NAVIGATION */
-
-nav {
-    position: fixed;
-    top: 0;
-    width: 100%;
-    height: 75px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 6%;
-    background: rgba(7,9,11,.82);
-    backdrop-filter: blur(18px);
-    border-bottom: 1px solid var(--border);
-    z-index: 1000;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 13px;
-    font-family: Rajdhani, sans-serif;
-    font-weight: 700;
-    letter-spacing: 2px;
-    font-size: 22px;
-}
-
-.logo-mark {
-    width: 40px;
-    height: 40px;
-    border: 1px solid #777;
-    display: grid;
-    place-items: center;
-    transform: rotate(45deg);
-}
-
-.logo-mark span {
-    transform: rotate(-45deg);
-    font-weight: 800;
-}
-
-.nav-links {
-    display: flex;
-    gap: 28px;
-    list-style: none;
-}
-
-.nav-links a {
-    color: #aeb5ba;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: .8px;
-    text-transform: uppercase;
-    transition: .25s;
-}
-
-.nav-links a:hover {
-    color: white;
-}
-
-/* HERO */
-
-.hero {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    position: relative;
-    padding: 120px 20px 80px;
-    overflow: hidden;
-}
-
-.hero::after {
-    content: "";
-    position: absolute;
-    width: 650px;
-    height: 650px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,.04);
-    box-shadow:
-        0 0 0 80px rgba(255,255,255,.015),
-        0 0 0 160px rgba(255,255,255,.01);
-}
-
-.hero-content {
-    position: relative;
-    z-index: 2;
-    max-width: 900px;
-}
-
-.eyebrow {
-    color: #929ba2;
-    font-size: 12px;
-    letter-spacing: 5px;
-    font-weight: 700;
-    margin-bottom: 20px;
-}
-
-.hero h1 {
-    font-family: Rajdhani, sans-serif;
-    font-size: clamp(70px, 13vw, 150px);
-    line-height: .8;
-    letter-spacing: 8px;
-    font-weight: 700;
-}
-
-.hero h1 span {
-    color: #777e84;
-}
-
-.hero-subtitle {
-    margin-top: 30px;
-    color: #a8afb4;
-    font-size: 16px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-}
-
-.hero-buttons {
-    margin-top: 40px;
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    flex-wrap: wrap;
-}
-
-.btn {
-    padding: 14px 25px;
-    border: 1px solid #555;
-    color: white;
-    text-decoration: none;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    transition: .3s;
-}
-
-.btn:hover {
-    background: white;
-    color: black;
-    transform: translateY(-3px);
-}
-
-.btn.primary {
-    background: white;
-    color: black;
-}
-
-/* STATUS */
-
-.status-bar {
-    width: min(850px, 90%);
-    margin: -55px auto 0;
-    position: relative;
-    z-index: 10;
-    background: rgba(15,19,23,.92);
-    border: 1px solid var(--border);
-    backdrop-filter: blur(15px);
-    box-shadow: var(--shadow);
-    display: grid;
-    grid-template-columns: repeat(3,1fr);
-}
-
-.status-item {
-    padding: 20px;
-    text-align: center;
-    border-right: 1px solid var(--border);
-}
-
-.status-item:last-child {
-    border: none;
-}
-
-.status-label {
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--muted);
-    text-transform: uppercase;
-}
-
-.status-value {
-    margin-top: 7px;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.active {
-    color: #69b982;
-}
-
-/* SECTIONS */
-
-section {
-    padding: 110px 7%;
-    position: relative;
-}
-
-.section-heading {
-    margin-bottom: 55px;
-}
-
-.section-heading small {
-    color: #7d858b;
-    font-size: 11px;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-}
-
-.section-heading h2 {
-    font-family: Rajdhani, sans-serif;
-    font-size: clamp(40px, 5vw, 65px);
-    letter-spacing: 2px;
-    margin-top: 10px;
-}
-
-.section-heading p {
-    color: var(--muted);
-    max-width: 650px;
-    line-height: 1.7;
-    margin-top: 12px;
-}
-
-/* MISSION */
-
-.mission {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 50px;
-    align-items: center;
-}
-
-.mission-text p {
-    color: #a6adb2;
-    line-height: 1.9;
-    margin-bottom: 20px;
-}
-
-.mission-box {
-    padding: 45px;
-    border: 1px solid var(--border);
-    background: linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.015));
-    box-shadow: var(--shadow);
-}
-
-.mission-box h3 {
-    font-family: Rajdhani;
-    font-size: 28px;
-    letter-spacing: 2px;
-}
-
-.mission-box p {
-    color: #929ba2;
-    line-height: 1.8;
-    margin-top: 15px;
-}
-
-/* VALUES */
-
-.values {
-    display: grid;
-    grid-template-columns: repeat(4,1fr);
-    gap: 15px;
-}
-
-.value-card {
-    padding: 30px 25px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    transition: .3s;
-}
-
-.value-card:hover {
-    transform: translateY(-7px);
-    border-color: #777;
-}
-
-.value-number {
-    font-family: Rajdhani;
-    color: #5f666c;
-    font-size: 13px;
-}
-
-.value-card h3 {
-    margin-top: 20px;
-    font-family: Rajdhani;
-    font-size: 23px;
-    letter-spacing: 1px;
-}
-
-.value-card p {
-    color: var(--muted);
-    line-height: 1.7;
-    margin-top: 10px;
-    font-size: 13px;
-}
-
-/* COMMAND */
-
-.command-grid {
-    display: grid;
-    grid-template-columns: repeat(3,1fr);
-    gap: 20px;
-}
-
-.person-card {
-    background: linear-gradient(145deg,#12171c,#0c1014);
-    border: 1px solid var(--border);
-    padding: 28px;
-    position: relative;
-    overflow: hidden;
-    transition: .3s;
-}
-
-.person-card:hover {
-    transform: translateY(-5px);
-    border-color: #737b81;
-}
-
-.person-card::before {
-    content: "STF";
-    position: absolute;
-    right: -15px;
-    top: 10px;
-    font-family: Rajdhani;
-    font-size: 70px;
-    font-weight: 700;
-    color: rgba(255,255,255,.025);
-}
-
-.rank {
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: #8f989f;
-    text-transform: uppercase;
-}
-
-.person-card h3 {
-    font-family: Rajdhani;
-    font-size: 27px;
-    margin-top: 10px;
-}
-
-.callsign {
-    display: inline-block;
-    margin-top: 12px;
-    padding: 6px 10px;
-    border: 1px solid #454c52;
-    font-size: 11px;
-    letter-spacing: 1px;
-    color: #c3c8cb;
-}
-
-.assignment {
-    color: #747d84;
-    font-size: 12px;
-    margin-top: 17px;
-}
-
-/* RANK TABLE */
-
-.rank-table-wrapper {
-    overflow-x: auto;
-    border: 1px solid var(--border);
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 700px;
-}
-
-th {
-    background: #151a1f;
-    padding: 18px;
-    text-align: left;
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: #8d969c;
-    text-transform: uppercase;
-}
-
-td {
-    padding: 19px 18px;
-    border-top: 1px solid var(--border);
-    color: #c0c5c8;
-    font-size: 13px;
-}
-
-tr:hover td {
-    background: rgba(255,255,255,.025);
-}
-
-.rank-badge {
-    display: inline-block;
-    border: 1px solid #4c545a;
-    padding: 5px 9px;
-    font-size: 10px;
-    letter-spacing: 1px;
-}
-
-/* DOCTRINE */
-
-.doctrine-grid {
-    display: grid;
-    grid-template-columns: repeat(3,1fr);
-    gap: 18px;
-}
-
-.doctrine-card {
-    border: 1px solid var(--border);
-    padding: 35px;
-    background: var(--panel);
-}
-
-.doctrine-card span {
-    font-family: Rajdhani;
-    color: #666e74;
-    font-size: 30px;
-}
-
-.doctrine-card h3 {
-    margin-top: 15px;
-    font-family: Rajdhani;
-    font-size: 25px;
-}
-
-.doctrine-card p {
-    margin-top: 12px;
-    color: var(--muted);
-    line-height: 1.7;
-    font-size: 13px;
-}
-
-/* TRAINING */
-
-.training-list {
-    max-width: 900px;
-}
-
-.training-item {
-    display: grid;
-    grid-template-columns: 80px 1fr;
-    border-bottom: 1px solid var(--border);
-    padding: 25px 0;
-}
-
-.training-number {
-    font-family: Rajdhani;
-    font-size: 25px;
-    color: #636b71;
-}
-
-.training-item h3 {
-    font-family: Rajdhani;
-    font-size: 23px;
-}
-
-.training-item p {
-    color: var(--muted);
-    font-size: 13px;
-    margin-top: 7px;
-    line-height: 1.6;
-}
-
-/* CONDUCT */
-
-.conduct {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 25px;
-}
-
-.conduct-card {
-    border: 1px solid var(--border);
-    padding: 35px;
-    background: var(--panel);
-}
-
-.conduct-card h3 {
-    font-family: Rajdhani;
-    font-size: 25px;
-    margin-bottom: 20px;
-}
-
-.conduct-card ul {
-    list-style: none;
-}
-
-.conduct-card li {
-    padding: 12px 0;
-    border-bottom: 1px solid rgba(255,255,255,.05);
-    color: #9aa2a7;
-    font-size: 13px;
-}
-
-.conduct-card li::before {
-    content: "—";
-    margin-right: 10px;
-    color: #666;
-}
-
-/* FOOTER */
-
-footer {
-    padding: 70px 7% 30px;
-    border-top: 1px solid var(--border);
-    text-align: center;
-}
-
-.footer-logo {
-    font-family: Rajdhani;
-    font-size: 40px;
-    letter-spacing: 8px;
-    font-weight: 700;
-}
-
-footer p {
-    color: #656d73;
-    font-size: 11px;
-    letter-spacing: 2px;
-    margin-top: 15px;
-}
-
-.footer-bottom {
-    margin-top: 40px;
-    color: #454b50;
-    font-size: 10px;
-}
-
-/* ANIMATION */
-
-.fade {
-    opacity: 0;
-    transform: translateY(25px);
-    transition: 1s ease;
-}
-
-.fade.show {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.ops-nav {
-    color: #d8dde0 !important;
-    border: 1px solid rgba(255,255,255,.16);
-    padding: 8px 12px;
-    background: rgba(255,255,255,.035);
-}
-
-.ops-nav:hover {
-    background: #ffffff;
-    color: #080a0d !important;
-}
-
-/* MOBILE */
-
-@media(max-width: 900px) {
-    .nav-links {
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unity Law DOJ | Case Management</title>
+  <style>
+    :root {
+      --bg: #0c0e11;
+      --panel: #14171c;
+      --panel2: #191d23;
+      --line: #292e36;
+      --text: #f1f3f5;
+      --muted: #969eaa;
+      --silver: #c7cbd1;
+      --accent: #e5e7eb;
+      --green: #58c69b;
+      --amber: #e9b45d;
+      --red: #ef7777;
+      --blue: #83b5ff;
+      --radius: 15px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.5 Inter, Segoe UI, Arial, sans-serif;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 245px 1fr;
+    }
+
+    .sidebar {
+      background: #101216;
+      border-right: 1px solid var(--line);
+      padding: 24px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 0 8px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .seal {
+      width: 43px;
+      height: 43px;
+      border: 1px solid #858b94;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      color: #e8e9eb;
+    }
+
+    .brand strong {
+      letter-spacing: 1.5px;
+      font-size: 15px;
+      display: block;
+    }
+
+    .brand small {
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 2px;
+    }
+
+    .navlabel {
+      font-size: 10px;
+      color: #727a86;
+      letter-spacing: 1.7px;
+      padding: 0 11px;
+      margin-bottom: 5px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 5px;
+    }
+
+    .nav button {
+      border: 0;
+      background: transparent;
+      color: #aeb4bd;
+      padding: 11px 12px;
+      text-align: left;
+      border-radius: 9px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .nav button:hover,
+    .nav button.active {
+      background: #242830;
+      color: white;
+    }
+
+    .nav button.active {
+      box-shadow: inset 3px 0 #d1d5db;
+    }
+
+    .nav .ico {
+      width: 18px;
+      text-align: center;
+    }
+
+    .sidebottom {
+      margin-top: auto;
+      border-top: 1px solid var(--line);
+      padding: 15px 8px 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .main {
+      min-width: 0;
+    }
+
+    .topbar {
+      height: 76px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 30px;
+      gap: 16px;
+      background: #0e1014;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .crumb {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .crumb b {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .topright {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .staffpill {
+      border: 1px solid var(--line);
+      padding: 8px 12px;
+      border-radius: 10px;
+      color: #d8dce1;
+      font-size: 12px;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #343a43;
+      font-weight: 700;
+    }
+
+    .content {
+      max-width: 1500px;
+      margin: auto;
+      padding: 30px;
+    }
+
+    .pagehead {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 25px;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      color: #a5abb4;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .pagehead h1 {
+      font-size: 28px;
+      letter-spacing: -.7px;
+      margin: 5px 0 5px;
+    }
+
+    .sub {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .btn {
+      border: 1px solid #3a4049;
+      background: #20242b;
+      color: #f5f6f7;
+      padding: 10px 14px;
+      border-radius: 9px;
+      font-weight: 600;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      background: #2b3039;
+    }
+
+    .btn.primary {
+      background: #e5e7eb;
+      color: #101216;
+      border-color: #e5e7eb;
+    }
+
+    .btn.danger {
+      border-color: #65383b;
+      color: #ffaaaa;
+      background: #2b191c;
+    }
+
+    .btn.small {
+      padding: 6px 9px;
+      font-size: 11px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .stat, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .stat {
+      padding: 17px 18px;
+    }
+
+    .stat-top {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .stat-icon {
+      color: #d7dbe0;
+    }
+
+    .stat strong {
+      font-size: 29px;
+      display: block;
+      margin-top: 10px;
+      letter-spacing: -1px;
+    }
+
+    .stat small {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(270px, .8fr);
+      gap: 18px;
+    }
+
+    .panel {
+      padding: 19px;
+      min-width: 0;
+    }
+
+    .panelhead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 17px;
+    }
+
+    .panelhead h2 {
+      font-size: 15px;
+      margin: 0;
+    }
+
+    .panelhead p {
+      font-size: 11px;
+      color: var(--muted);
+      margin: 3px 0 0;
+    }
+
+    .filters {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .field label {
+      font-size: 11px;
+      color: #b7bdc6;
+      font-weight: 600;
+    }
+
+    .field input, .field select, .field textarea, .search {
+      width: 100%;
+      border: 1px solid #303640;
+      background: #0f1216;
+      color: #f1f3f5;
+      padding: 10px 11px;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    .field input:focus, .field select:focus, .field textarea:focus, .search:focus {
+      border-color: #858d99;
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .search {
+      max-width: 270px;
+    }
+
+    .tablewrap {
+      overflow: auto;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 650px;
+    }
+
+    th {
+      text-align: left;
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #7f8793;
+      font-weight: 600;
+      padding: 11px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    td {
+      padding: 13px 10px;
+      border-bottom: 1px solid #252a31;
+      font-size: 12px;
+      color: #d8dce1;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    tbody tr:hover {
+      background: #1a1e24;
+    }
+
+    .caseid {
+      color: #c5cbd3;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .casetitle {
+      font-weight: 650;
+      color: #f1f3f5;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .tag {
+      display: inline-flex;
+      padding: 4px 8px;
+      border-radius: 30px;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .status-open {
+      background: #18382e;
+      color: #7ee0b6;
+      border-color: #245343;
+    }
+
+    .status-review {
+      background: #3a301b;
+      color: #f0cb7c;
+      border-color: #594824;
+    }
+
+    .status-court {
+      background: #1c2e48;
+      color: #9bc6ff;
+      border-color: #2d4770;
+    }
+
+    .status-closed {
+      background: #292d33;
+      color: #b6bdc6;
+      border-color: #3c424b;
+    }
+
+    .priority-high {
+      color: #ff9a9a;
+    }
+
+    .priority-medium {
+      color: #f2cb7b;
+    }
+
+    .priority-low {
+      color: #8bd8b6;
+    }
+
+    .activity {
+      display: grid;
+      gap: 18px;
+    }
+
+    .activityitem {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 11px;
+    }
+
+    .activityico {
+      width: 29px;
+      height: 29px;
+      border: 1px solid #343a44;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      color: #c8cdd4;
+    }
+
+    .activityitem p {
+      margin: 0;
+      font-size: 12px;
+    }
+
+    .activityitem small {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .quickgrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .quick {
+      background: #1b1f26;
+      border: 1px solid #303640;
+      border-radius: 11px;
+      padding: 14px;
+      text-align: left;
+      color: #eef0f2;
+    }
+
+    .quick span {
+      display: block;
+      font-size: 19px;
+      margin-bottom: 10px;
+    }
+
+    .quick b {
+      font-size: 12px;
+      display: block;
+    }
+
+    .quick small {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .empty {
+      padding: 35px 12px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty b {
+      display: block;
+      color: #d7dbe0;
+      margin-bottom: 5px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .modalback {
+      position: fixed;
+      inset: 0;
+      background: #000b;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .modal {
+      width: min(900px, 100%);
+      max-height: 94vh;
+      overflow: auto;
+      background: #13161b;
+      border: 1px solid #3a4049;
+      border-radius: 17px;
+      box-shadow: 0 25px 90px #000a;
+    }
+
+    .modalhead {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 22px 24px;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: #13161b;
+      z-index: 2;
+    }
+
+    .modalhead h2 {
+      margin: 3px 0;
+      font-size: 21px;
+    }
+
+    .close {
+      background: transparent;
+      color: #cbd0d7;
+      border: 1px solid #3a4049;
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+    }
+
+    .formbody {
+      padding: 22px 24px;
+    }
+
+    .formgrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 15px;
+    }
+
+    .span2 {
+      grid-column: span 2;
+    }
+
+    .formfoot {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 16px 24px;
+      border-top: 1px solid var(--line);
+      position: sticky;
+      bottom: 0;
+      background: #13161b;
+    }
+
+    .uploadbox {
+      border: 1px dashed #4b535f;
+      background: #101318;
+      padding: 18px;
+      border-radius: 10px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .uploadbox input {
+      max-width: 100%;
+      margin-top: 10px;
+    }
+
+    .evidencegrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .evidence {
+      position: relative;
+      border: 1px solid #363c45;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #0e1014;
+    }
+
+    .evidence img {
+      width: 100%;
+      height: 110px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .evidence p {
+      margin: 0;
+      padding: 7px;
+      font-size: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .evidence button {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: #101216d9;
+      border: 1px solid #666;
+      color: white;
+      border-radius: 6px;
+    }
+
+    .detailgrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .detailbox {
+      background: #101318;
+      border: 1px solid #2b3038;
+      border-radius: 10px;
+      padding: 13px;
+    }
+
+    .detailbox small {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+
+    .detailbox p {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 50;
+      background: #e5e7eb;
+      color: #111318;
+      padding: 12px 17px;
+      border-radius: 10px;
+      box-shadow: 0 8px 30px #0008;
+      font-weight: 700;
+    }
+
+    .notice {
+      background: #292419;
+      border: 1px solid #55482b;
+      border-radius: 10px;
+      padding: 12px;
+      color: #e8d5a7;
+      font-size: 11px;
+      margin-bottom: 18px;
+    }
+
+    .settingsgrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 15px;
+    }
+
+    .reportgrid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .reportcard {
+      background: #101318;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      padding: 17px;
+    }
+
+    .reportcard strong {
+      font-size: 25px;
+      display: block;
+    }
+
+    .reportcard small {
+      color: var(--muted);
+    }
+
+    .mobilemenu {
+      display: none;
+    }
+
+    @media (max-width: 1000px) {
+      .app {
+        grid-template-columns: 205px 1fr;
+      }
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .content {
+        padding: 22px;
+      }
+      .topbar {
+        padding: 0 20px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .app {
+        display: block;
+      }
+      .sidebar {
         display: none;
-    }
-
-    .mission,
-    .conduct {
+      }
+      .sidebar.open {
+        display: flex;
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 260px;
+        z-index: 15;
+        box-shadow: 15px 0 50px #0008;
+      }
+      .mobilemenu {
+        display: inline-flex;
+      }
+      .topbar {
+        height: 65px;
+        padding: 0 14px;
+      }
+      .content {
+        padding: 18px 13px;
+      }
+      .pagehead {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .pagehead h1 {
+        font-size: 24px;
+      }
+      .stats {
+        gap: 9px;
+      }
+      .stat {
+        padding: 13px;
+      }
+      .stat strong {
+        font-size: 24px;
+      }
+      .staffpill {
+        display: none;
+      }
+      .formgrid, .detailgrid, .settingsgrid {
         grid-template-columns: 1fr;
-    }
-
-    .values {
-        grid-template-columns: repeat(2,1fr);
-    }
-
-    .command-grid,
-    .doctrine-grid {
+      }
+      .span2 {
+        grid-column: auto;
+      }
+      .formbody {
+        padding: 17px;
+      }
+      .modalhead, .formfoot {
+        padding: 16px;
+      }
+      .reportgrid {
         grid-template-columns: 1fr;
-    }
-
-    .status-bar {
+      }
+      .search {
+        max-width: none;
+        flex: 1;
+      }
+      .filters {
+        display: grid;
         grid-template-columns: 1fr;
+      }
+      .topright {
+        gap: 7px;
+      }
     }
-
-    .status-item {
-        border-right: none;
-        border-bottom: 1px solid var(--border);
-    }
-}
-
-@media(max-width: 600px) {
-    section {
-        padding: 80px 5%;
-    }
-
-    .values {
-        grid-template-columns: 1fr;
-    }
-
-    .hero h1 {
-        font-size: 75px;
-        letter-spacing: 4px;
-    }
-
-    .mission-box {
-        padding: 25px;
-    }
-}
-</style>
+  </style>
 </head>
-
 <body>
-
-<!-- NAVIGATION -->
-<nav>
-    <div class="logo">
-        <div class="logo-mark"><span>STF</span></div>
-        SPECIAL TASK FORCE
-    </div>
-
-    <ul class="nav-links">
-        <li><a href="#home">Home</a></li>
-        <li><a href="#mission">Mission</a></li>
-        <li><a href="#values">Values</a></li>
-        <li><a href="#command">Command</a></li>
-        <li><a href="active-operations.html" class="ops-nav">Active Operations</a></li>
-    </ul>
-</nav>
-
-
-<!-- HERO -->
-<header class="hero" id="home">
-    <div class="hero-content fade">
-
-        <div class="eyebrow">UNITY REJECTS GOVERNMENT • SPECIAL OPERATIONS</div>
-
-        <h1>STF<span>.</span></h1>
-
-        <div class="hero-subtitle">
-            Special Task Force
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="seal">⚖</div>
+        <div>
+          <strong>UNITY LAW DOJ</strong>
+          <small>JUSTICE • INTEGRITY • SERVICE</small>
         </div>
+      </div>
+      <div>
+        <div class="navlabel">WORKSPACE</div>
+        <nav class="nav">
+          <button class="active" data-page="dashboard"><span class="ico">▦</span>Dashboard</button>
+          <button data-page="cases"><span class="ico">▤</span>Case files</button>
+          <button data-page="evidence"><span class="ico">▧</span>Evidence register</button>
+          <button data-page="activity"><span class="ico">◷</span>Activity log</button>
+        </nav>
+      </div>
+      <div>
+        <div class="navlabel">MANAGEMENT</div>
+        <nav class="nav">
+          <button data-page="reports"><span class="ico">▥</span>Reports</button>
+          <button data-page="settings"><span class="ico">⚙</span>Portal settings</button>
+        </nav>
+      </div>
+      <div class="sidebottom">
+        RESTRICTED • AUTHORISED DOJ PERSONNEL ONLY<br><br>
+        Unity Law Roleplay · DOJ Portal v1.0
+      </div>
+    </aside>
 
-        <div class="hero-buttons">
-            <a href="#mission" class="btn primary">Our Mission</a>
-            <a href="#command" class="btn">Command Structure</a>
+    <main class="main">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn mobilemenu" id="mobilemenu">☰</button>
+          <div class="crumb">UNITY LAW / DOJ / <b id="crumb">DASHBOARD</b></div>
         </div>
-
-    </div>
-</header>
-
-
-<!-- STATUS BAR -->
-<div class="status-bar fade">
-
-    <div class="status-item">
-        <div class="status-label">Unit Status</div>
-        <div class="status-value active">● OPERATIONAL</div>
-    </div>
-
-    <div class="status-item">
-        <div class="status-label">Unit</div>
-        <div class="status-value">SPECIAL TASK FORCE</div>
-    </div>
-
-    <div class="status-item">
-        <div class="status-label">Standard</div>
-        <div class="status-value">DISCIPLINE • INTEGRITY • SERVICE</div>
-    </div>
-
-</div>
-
-
-<!-- MISSION -->
-<section id="mission">
-
-    <div class="section-heading fade">
-        <small>01 / Mission</small>
-        <h2>OUR MISSION</h2>
-    </div>
-
-    <div class="mission">
-
-        <div class="mission-text fade">
-
-            <p>
-                The Special Task Force exists to provide a highly disciplined,
-                professional and accountable response to situations requiring
-                specialised operational capability.
-            </p>
-
-            <p>
-                Every STF member represents more than themselves. Every action
-                reflects upon the unit, its leadership and the wider UNITY REJECTS
-                Government.
-            </p>
-
-            <p>
-                Our objective is simple: protect life, uphold the law,
-                maintain operational discipline and complete every assignment
-                with professionalism.
-            </p>
-
+        <div class="topright">
+          <div class="staffpill">⚖ &nbsp; DOJ Staff Portal</div>
+          <div class="avatar" id="avatar">D</div>
+          <span id="staffname" style="font-size:12px">DOJ Staff</span>
         </div>
+      </header>
+      <div class="content" id="content"></div>
+    </main>
+  </div>
 
-        <div class="mission-box fade">
+  <div id="modalroot"></div>
+  <div id="toastroot"></div>
 
-            <h3>THE STF STANDARD</h3>
+  <script>
+    const KEY = 'unity-law_doj_cases_v1', 
+          LOGKEY = 'unity-law_doj_log_v1', 
+          PROFILE = 'unity-law_doj_profile_v1';
+          
+    const statuses = ['Open', 'Under Review', 'Court Scheduled', 'Closed'];
+    const types = ['Criminal', 'Civil Dispute', 'Business Compliance', 'Property', 'Name Change', 'Marriage / Family', 'Contract', 'Government Review', 'Other'];
+    const priorities = ['Low', 'Medium', 'High'];
 
-            <p>
-                "We do not seek recognition. We seek results.
-                We do not act for ourselves. We act for those we serve.
-                We remain disciplined when others lose control."
-            </p>
+    let cases = load(KEY, []), 
+        logs = load(LOGKEY, []), 
+        profile = load(PROFILE, { name: 'DOJ Staff', rank: 'Department of Justice' }), 
+        page = 'dashboard', 
+        searchText = '', 
+        statusFilter = 'All', 
+        typeFilter = 'All', 
+        selectedCase = null, 
+        pendingImages = [];
 
+    function load(k, f) {
+      try { 
+        return JSON.parse(localStorage.getItem(k)) ?? f; 
+      } catch (e) { 
+        return f; 
+      }
+    }
+
+    function save() {
+      localStorage.setItem(KEY, JSON.stringify(cases));
+      localStorage.setItem(LOGKEY, JSON.stringify(logs));
+      localStorage.setItem(PROFILE, JSON.stringify(profile));
+    }
+
+    function esc(s = '') {
+      return String(s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[c]));
+    }
+
+    function date(v) {
+      if (!v) return '—';
+      try {
+        return new Date(v + 'T12:00:00').toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' });
+      } catch {
+        return v;
+      }
+    }
+
+    function now() {
+      return new Date().toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    function id() {
+      return 'DOJ-' + new Date().getFullYear() + '-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+    }
+
+    function log(action, caseId = '', detail = '') {
+      logs.unshift({ id: Date.now() + Math.random(), action, caseId, detail, by: profile.name, at: now() });
+      logs = logs.slice(0, 500);
+      save();
+    }
+
+    function toast(msg) {
+      document.getElementById('toastroot').innerHTML = `<div class="toast">${esc(msg)}</div>`;
+      setTimeout(() => document.getElementById('toastroot').innerHTML = '', 2600);
+    }
+
+    function statusTag(s) {
+      let cl = {
+        'Open': 'status-open',
+        'Under Review': 'status-review',
+        'Court Scheduled': 'status-court',
+        'Closed': 'status-closed'
+      }[s] || 'status-closed';
+      return `<span class="tag ${cl}">${esc(s)}</span>`;
+    }
+
+    function priority(s) {
+      return `<span class="priority-${String(s).toLowerCase()}">● ${esc(s || 'Medium')}</span>`;
+    }
+
+    function filtered() {
+      return cases.filter(c => 
+        (statusFilter === 'All' || c.status === statusFilter) && 
+        (typeFilter === 'All' || c.type === typeFilter) && 
+        JSON.stringify(c).toLowerCase().includes(searchText.toLowerCase())
+      ).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+    }
+
+    function setPage(p) {
+      page = p;
+      document.querySelectorAll('[data-page]').forEach(b => b.classList.toggle('active', b.dataset.page === p));
+      document.getElementById('crumb').textContent = p.replace(/-/g, ' ').toUpperCase();
+      document.getElementById('sidebar').classList.remove('open');
+      render();
+    }
+
+    document.querySelectorAll('[data-page]').forEach(b => b.onclick = () => setPage(b.dataset.page));
+    document.getElementById('mobilemenu').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+
+    function head(k, title, sub, btn = '') {
+      return `<div class="pagehead"><div><div class="eyebrow">${k}</div><h1>${title}</h1><p class="sub">${sub}</p></div>${btn}</div>`;
+    }
+
+    function stat(label, note, n, icon) {
+      return `<div class="stat"><div class="stat-top"><span>${label}</span><span class="stat-icon">${icon}</span></div><strong>${n}</strong><small>${note}</small></div>`;
+    }
+
+    function tableRows(list) {
+      if (!list.length) return `<tr><td colspan="7"><div class="empty"><b>No case files found</b>Create a new case or adjust your search.</div></td></tr>`;
+      return list.map(c => `
+        <tr>
+          <td><span class="caseid">${esc(c.id)}</span></td>
+          <td><div class="casetitle">${esc(c.title)}</div><div class="muted">${esc(c.type)}</div></td>
+          <td>${esc(c.subject || '—')}</td>
+          <td>${statusTag(c.status)}</td>
+          <td>${priority(c.priority)}</td>
+          <td>${esc(c.assigned || 'Unassigned')}</td>
+          <td><button class="btn small" onclick="viewCase('${c.id}')">Open ↗</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function caseTable(list) {
+      return `<div class="tablewrap"><table><thead><tr><th>Case number</th><th>Case file</th><th>Primary party</th><th>Status</th><th>Priority</th><th>Assigned to</th><th></th></tr></thead><tbody>${tableRows(list)}</tbody></table></div>`;
+    }
+
+    function render() {
+      const root = document.getElementById('content');
+      document.getElementById('staffname').textContent = profile.name || 'DOJ Staff';
+      document.getElementById('avatar').textContent = (profile.name || 'D').trim().charAt(0).toUpperCase();
+      
+      if (page === 'dashboard') root.innerHTML = dashboard();
+      else if (page === 'cases') root.innerHTML = casesPage();
+      else if (page === 'evidence') root.innerHTML = evidencePage();
+      else if (page === 'activity') root.innerHTML = activityPage();
+      else if (page === 'reports') root.innerHTML = reportsPage();
+      else root.innerHTML = settingsPage();
+    }
+
+    function dashboard() {
+      let open = cases.filter(c => c.status === 'Open').length,
+          review = cases.filter(c => c.status === 'Under Review').length,
+          court = cases.filter(c => c.status === 'Court Scheduled').length,
+          closed = cases.filter(c => c.status === 'Closed').length;
+
+      return `
+        ${head('OVERVIEW', 'DOJ Dashboard', 'Case activity and department workload at a glance.', `<button class="btn primary" onclick="openCaseForm()">＋ Open new case</button>`)}
+        <div class="notice">⚠ <b>Staff notice:</b> This prototype saves records in this browser only. Do not enter real personal or sensitive information until shared authentication and secure storage are configured.</div>
+        <div class="stats">
+          ${stat('Open cases', 'Awaiting action', open, '◷')}
+          ${stat('Under review', 'Currently being reviewed', review, '⌕')}
+          ${stat('Court scheduled', 'Awaiting hearing', court, '⚖')}
+          ${stat('Closed cases', 'Completed matters', closed, '✓')}
         </div>
-
-    </div>
-
-</section>
-
-
-<!-- VALUES -->
-<section id="values">
-
-    <div class="section-heading fade">
-        <small>02 / Foundation</small>
-        <h2>MORALS & VALUES</h2>
-        <p>
-            The standards expected from every member of the Special Task Force.
-        </p>
-    </div>
-
-    <div class="values">
-
-        <div class="value-card fade">
-            <div class="value-number">01</div>
-            <h3>INTEGRITY</h3>
-            <p>
-                Do what is right even when nobody is watching.
-                Honesty and trust are fundamental to the unit.
-            </p>
+        <div class="layout">
+          <section class="panel">
+            <div class="panelhead">
+              <div><h2>Recently updated cases</h2><p>Latest case files across the department</p></div>
+              <button class="btn small" onclick="setPage('cases')">View all →</button>
+            </div>
+            ${caseTable([...cases].sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')).slice(0, 6))}
+          </section>
+          <div style="display:grid;gap:18px;align-content:start">
+            <section class="panel">
+              <div class="panelhead"><div><h2>Quick actions</h2><p>Common department tasks</p></div></div>
+              <div class="quickgrid">
+                <button class="quick" onclick="openCaseForm()"><span>＋</span><b>Open a case</b><small>Create a new file</small></button>
+                <button class="quick" onclick="setPage('evidence')"><span>▧</span><b>Evidence</b><small>Review uploaded images</small></button>
+                <button class="quick" onclick="setPage('reports')"><span>▥</span><b>Reports</b><small>View case statistics</small></button>
+                <button class="quick" onclick="setPage('activity')"><span>◷</span><b>Activity log</b><small>Recent staff actions</small></button>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panelhead">
+                <div><h2>Recent activity</h2><p>Latest changes recorded</p></div>
+                <button class="btn small" onclick="setPage('activity')">View →</button>
+              </div>
+              ${activityList(logs.slice(0, 5))}
+            </section>
+          </div>
         </div>
+      `;
+    }
 
-        <div class="value-card fade">
-            <div class="value-number">02</div>
-            <h3>DISCIPLINE</h3>
-            <p>
-                Follow lawful orders, maintain composure and operate
-                according to established standards.
-            </p>
+    function casesPage() {
+      return `
+        ${head('CASE MANAGEMENT', 'Case files', 'Search, filter, open and update department case records.', `<button class="btn primary" onclick="openCaseForm()">＋ Open new case</button>`)}
+        <section class="panel">
+          <div class="filters">
+            <input class="search" id="caseSearch" placeholder="Search cases, people, details…" value="${esc(searchText)}" oninput="searchText=this.value;refreshTable()">
+            <select class="search" style="max-width:190px" onchange="statusFilter=this.value;refreshTable()">
+              <option>All</option>
+              ${statuses.map(s => `<option ${statusFilter === s ? 'selected' : ''}>${s}</option>`)}
+            </select>
+            <select class="search" style="max-width:210px" onchange="typeFilter=this.value;refreshTable()">
+              <option>All</option>
+              ${types.map(s => `<option ${typeFilter === s ? 'selected' : ''}>${s}</option>`)}
+            </select>
+            <button class="btn" onclick="searchText='';statusFilter='All';typeFilter='All';render()">Reset filters</button>
+          </div>
+          <div id="caseTable">${caseTable(filtered())}</div>
+          <div class="muted" style="font-size:11px;margin-top:14px">Showing ${filtered().length} of ${cases.length} case files</div>
+        </section>
+      `;
+    }
+
+    function refreshTable() {
+      let el = document.getElementById('caseTable');
+      if (el) el.innerHTML = caseTable(filtered());
+      let count = document.querySelector('#content .panel .muted');
+      if (count) count.textContent = `Showing ${filtered().length} of ${cases.length} case files`;
+    }
+
+    function activityList(list) {
+      if (!list.length) return `<div class="empty"><b>No activity yet</b>Actions will appear here as staff work with cases.</div>`;
+      return `<div class="activity">${list.map(l => `
+        <div class="activityitem">
+          <div class="activityico">${l.action.includes('Opened') ? '＋' : l.action.includes('Deleted') ? '×' : '↻'}</div>
+          <div><p><b>${esc(l.action)}</b>${l.caseId ? ' · ' + esc(l.caseId) : ''}</p><small>${esc(l.detail || '')} · ${esc(l.by || 'Staff')} · ${esc(l.at || '')}</small></div>
         </div>
+      `).join('')}</div>`;
+    }
 
-        <div class="value-card fade">
-            <div class="value-number">03</div>
-            <h3>COURAGE</h3>
-            <p>
-                Face difficult situations with determination while
-                maintaining sound judgement.
-            </p>
+    function activityPage() {
+      return `
+        ${head('AUDIT TRAIL', 'Activity log', 'A local record of case changes made in this browser.', `<button class="btn" onclick="exportLog()">⇩ Export log</button>`)}
+        <section class="panel">
+          <div class="panelhead">
+            <div><h2>Recent actions</h2><p>Newest entries appear first · up to 500 entries</p></div>
+            <button class="btn small danger" onclick="clearLog()">Clear log</button>
+          </div>
+          ${activityList(logs)}
+        </section>
+      `;
+    }
+
+    function evidencePage() {
+      let list = cases.filter(c => (c.images || []).length);
+      return `
+        ${head('EVIDENCE MANAGEMENT', 'Evidence register', 'Browse image evidence attached to case files.')}
+        <section class="panel">
+          <div class="panelhead">
+            <div><h2>Case evidence</h2><p>Evidence stays linked to its case record</p></div>
+            <span class="tag status-court">${list.reduce((n, c) => n + c.images.length, 0)} images</span>
+          </div>
+          ${!list.length ? `<div class="empty"><b>No evidence uploaded</b>Open a case and use Edit case to attach evidence images.</div>` : `<div class="evidencegrid">${list.flatMap(c => c.images.map((im, i) => `
+            <div class="evidence">
+              <img src="${im.url || im.data || ''}" alt="${esc(im.name)}" onclick="viewCase('${c.id}')" style="cursor:pointer">
+              <p><b>${esc(im.name)}</b><br><span class="muted">${esc(c.id)}</span></p>
+            </div>
+          `)).join('')}</div>`}
+        </section>
+      `;
+    }
+
+    function reportsPage() {
+      let total = cases.length, withEvidence = cases.filter(c => c.images?.length).length;
+      return `
+        ${head('DEPARTMENT INSIGHTS', 'Reports & statistics', 'A summary of the current case register.', `<button class="btn" onclick="exportCases()">⇩ Export case data</button>`)}
+        <div class="reportgrid">
+          ${stat('Total cases', 'All registered files', total, '▤')}
+          ${stat('Evidence files', 'Cases with images', withEvidence, '▧')}
+          ${stat('Closed matters', 'Completed cases', cases.filter(c => c.status === 'Closed').length, '✓')}
         </div>
+        <section class="panel" style="margin-top:18px">
+          <div class="panelhead"><div><h2>Case breakdown</h2><p>Counts by current status and case type</p></div></div>
+          <div class="settingsgrid">
+            <div>
+              ${statuses.map(s => {
+                let n = cases.filter(c => c.status === s).length;
+                return `
+                  <div style="margin:13px 0">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px">
+                      <span>${statusTag(s)}</span><b>${n}</b>
+                    </div>
+                    <div style="height:6px;border-radius:10px;background:#292e36;overflow:hidden">
+                      <div style="height:100%;width:${total ? 100 * n / total : 0}%;background:#c7cbd1;border-radius:10px"></div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            <div>
+              ${types.map(t => {
+                let n = cases.filter(c => c.type === t).length;
+                return n ? `<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px"><span>${esc(t)}</span><b>${n}</b></div>` : '';
+              }).join('') || '<div class="empty">No case types recorded yet.</div>'}
+            </div>
+          </div>
+        </section>
+      `;
+    }
 
-        <div class="value-card fade">
-            <div class="value-number">04</div>
-            <h3>ACCOUNTABILITY</h3>
-            <p>
-                Every member is responsible for their decisions,
-                conduct and actions.
-            </p>
+    function settingsPage() {
+      return `
+        ${head('PREFERENCES', 'Portal settings', 'Configure the displayed staff identity and manage local data.')}
+        <div class="layout">
+          <section class="panel">
+            <div class="panelhead"><div><h2>Staff profile</h2><p>Name appears in the portal header and activity log.</p></div></div>
+            <form id="profileForm" class="settingsgrid">
+              <div class="field"><label>DISPLAY NAME</label><input name="name" required maxlength="70" value="${esc(profile.name)}"></div>
+              <div class="field"><label>RANK / POSITION</label><input name="rank" maxlength="70" value="${esc(profile.rank)}"></div>
+              <div style="grid-column:1/-1"><button class="btn primary">Save profile</button></div>
+            </form>
+          </section>
+          <section class="panel">
+            <div class="panelhead"><div><h2>Data management</h2><p>Export a backup before clearing browser data.</p></div></div>
+            <div style="display:grid;gap:10px">
+              <button class="btn" onclick="exportCases()">⇩ Export case backup (JSON)</button>
+              <button class="btn" onclick="exportCsv()">⇩ Export case list (CSV)</button>
+              <label class="btn" style="cursor:pointer">⇧ Import JSON backup<input id="importFile" type="file" accept="application/json,.json" hidden onchange="importBackup(event)"></label>
+              <button class="btn danger" onclick="clearAll()">Delete all local case data</button>
+            </div>
+            <p class="muted" style="font-size:11px;margin-top:15px">This prototype uses this browser's local storage. Clearing browser data may remove saved cases and evidence. It does not provide secure logins, server-side permissions or cross-device syncing.</p>
+          </section>
         </div>
+        <section class="panel" style="margin-top:18px">
+          <h2 style="font-size:15px;margin-top:0">Before going live</h2>
+          <p class="muted">Deploy with a shared database and private image storage, staff authentication, role-based access, server-side validation, and backups. Do not use this local prototype for real sensitive records.</p>
+        </section>
+      `;
+    }
 
-        <div class="value-card fade">
-            <div class="value-number">05</div>
-            <h3>RESPECT</h3>
-            <p>
-                Treat colleagues, civilians and suspects with dignity
-                and professionalism.
-            </p>
+    function openCaseForm(caseId = null) {
+      let c = cases.find(x => x.id === caseId) || {
+        id: id(),
+        title: '',
+        type: 'Criminal',
+        status: 'Open',
+        priority: 'Medium',
+        subject: '',
+        otherParties: '',
+        assigned: profile.name || '',
+        openedBy: profile.name || '',
+        openedDate: new Date().toISOString().slice(0, 10),
+        incidentDate: '',
+        location: '',
+        summary: '',
+        allegations: '',
+        evidenceNotes: '',
+        legalNotes: '',
+        outcome: '',
+        nextHearing: '',
+        images: [],
+        notes: []
+      };
+      selectedCase = caseId;
+      pendingImages = [];
+      
+      document.getElementById('modalroot').innerHTML = `
+        <div class="modalback" onclick="if(event.target===this)closeModal()">
+          <section class="modal">
+            <div class="modalhead">
+              <div>
+                <div class="eyebrow">${caseId ? 'EDIT CASE FILE' : 'NEW CASE FILE'}</div>
+                <h2>${caseId ? 'Update case information' : 'Open a new case'}</h2>
+                <div class="muted" style="font-size:11px">Case number: ${esc(c.id)}</div>
+              </div>
+              <button class="close" onclick="closeModal()">✕</button>
+            </div>
+            <form id="caseForm">
+              <div class="formbody">
+                <input type="hidden" name="id" value="${esc(c.id)}">
+                <div class="formgrid">
+                  <div class="field span2"><label>CASE TITLE *</label><input name="title" required maxlength="140" placeholder="e.g. State v. John Doe" value="${esc(c.title)}"></div>
+                  <div class="field"><label>CASE TYPE *</label><select name="type">${types.map(s => `<option ${c.type === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+                  <div class="field"><label>STATUS</label><select name="status">${statuses.map(s => `<option ${c.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+                  <div class="field"><label>PRIORITY</label><select name="priority">${priorities.map(s => `<option ${c.priority === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+                  <div class="field"><label>ASSIGNED DOJ STAFF / LAWYER</label><input name="assigned" maxlength="100" value="${esc(c.assigned)}" placeholder="Staff member"></div>
+                  <div class="field"><label>PRIMARY PARTY / SUBJECT</label><input name="subject" maxlength="120" value="${esc(c.subject)}" placeholder="Citizen or business"></div>
+                  <div class="field"><label>OTHER PARTIES / WITNESSES</label><input name="otherParties" maxlength="500" value="${esc(c.otherParties)}" placeholder="Names and roles"></div>
+                  <div class="field"><label>DATE OPENED</label><input type="date" name="openedDate" value="${esc(c.openedDate)}"></div>
+                  <div class="field"><label>INCIDENT DATE</label><input type="date" name="incidentDate" value="${esc(c.incidentDate)}"></div>
+                  <div class="field"><label>LOCATION</label><input name="location" maxlength="180" value="${esc(c.location)}" placeholder="Location in city"></div>
+                  <div class="field"><label>NEXT HEARING DATE</label><input type="date" name="nextHearing" value="${esc(c.nextHearing)}"></div>
+                  <div class="field span2"><label>CASE SUMMARY *</label><textarea name="summary" required maxlength="12000" placeholder="Summarise the matter and relevant facts…">${esc(c.summary)}</textarea></div>
+                  <div class="field span2"><label>ALLEGATIONS / CLAIMS</label><textarea name="allegations" maxlength="12000" placeholder="Record allegations neutrally; distinguish claims from established findings.">${esc(c.allegations)}</textarea></div>
+                  <div class="field span2"><label>EVIDENCE NOTES</label><textarea name="evidenceNotes" maxlength="12000" placeholder="Describe evidence, sources and reference numbers…">${esc(c.evidenceNotes)}</textarea></div>
+                  <div class="field span2"><label>LEGAL / INTERNAL NOTES</label><textarea name="legalNotes" maxlength="12000" placeholder="Internal case notes…">${esc(c.legalNotes)}</textarea></div>
+                  <div class="field span2"><label>OUTCOME / RESOLUTION</label><textarea name="outcome" maxlength="12000" placeholder="Court outcome, settlement or closure reason…">${esc(c.outcome)}</textarea></div>
+                  <div class="field span2">
+                    <label>IMAGE EVIDENCE LINKS</label>
+                    <div class="uploadbox" style="text-align:left">
+                      <b style="color:#f1f3f5">Add an image URL</b><br>
+                      <small>Paste a direct image link (for example, a publicly accessible .jpg, .png or Discord CDN image URL). The link must be viewable by staff who access the case.</small>
+                      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+                        <input id="imageUrlInput" type="url" placeholder="https://example.com/evidence-image.jpg" style="flex:1;min-width:220px;margin:0">
+                        <button type="button" class="btn" onclick="addImageLink()">＋ Add image link</button>
+                      </div>
+                      <div id="imageUrlError" style="color:#ff9a9a;font-size:11px;margin-top:6px"></div>
+                    </div>
+                    <div class="evidencegrid" id="pendingEvidence">
+                      ${(c.images || []).map((im, i) => `
+                        <div class="evidence">
+                          <a href="${esc(im.url || im.data || '')}" target="_blank" rel="noopener">
+                            <img src="${esc(im.url || im.data || '')}" alt="${esc(im.name || 'Evidence image')}">
+                          </a>
+                          <p>${esc(im.name || 'Evidence image')}</p>
+                          <button type="button" onclick="removeExistingImage('${c.id}', ${i})">✕</button>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+                  <div class="field span2"><label>ADD CASE NOTE</label><textarea name="newNote" maxlength="4000" placeholder="Optional update to append to the case timeline…" style="min-height:65px"></textarea></div>
+                </div>
+              </div>
+              <div class="formfoot">
+                <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+                <button class="btn primary" type="submit">${caseId ? 'Save changes' : 'Create case file'}</button>
+              </div>
+            </form>
+          </section>
         </div>
+      `;
+      document.getElementById('caseForm').onsubmit = saveCase;
+    }
 
-        <div class="value-card fade">
-            <div class="value-number">06</div>
-            <h3>TEAMWORK</h3>
-            <p>
-                No operator works alone. Communication, coordination
-                and trust are essential.
-            </p>
+    function addImageLink() {
+      let input = document.getElementById('imageUrlInput'), err = document.getElementById('imageUrlError');
+      if (!input) return;
+      let value = input.value.trim();
+      try {
+        let u = new URL(value);
+        if (!['http:', 'https:'].includes(u.protocol)) throw new Error();
+      } catch {
+        if (err) err.textContent = 'Enter a valid image link beginning with https:// or http://.';
+        return;
+      }
+      pendingImages.push({ name: value.split('/').pop().split('?')[0] || 'Evidence image', url: value, addedAt: now() });
+      input.value = '';
+      if (err) err.textContent = '';
+      drawPending();
+      let preview = document.querySelector('#pendingEvidence .evidence:last-child img');
+      if (preview) preview.onerror = () => toast('Link added, but the image preview could not load. Check permissions or use a direct image URL.');
+    }
+
+    function drawPending() {
+      let el = document.getElementById('pendingEvidence');
+      if (!el) return;
+      let c = cases.find(x => x.id === selectedCase), existing = c?.images || [];
+      el.innerHTML = [
+        ...existing.map((im, i) => `
+          <div class="evidence">
+            <a href="${esc(im.url || im.data || '')}" target="_blank" rel="noopener">
+              <img src="${esc(im.url || im.data || '')}" alt="${esc(im.name || 'Evidence image')}">
+            </a>
+            <p>${esc(im.name || 'Evidence image')}</p>
+            <button type="button" onclick="removeExistingImage('${c.id}', ${i})">✕</button>
+          </div>
+        `),
+        ...pendingImages.map((im, i) => `
+          <div class="evidence">
+            <a href="${esc(im.url)}" target="_blank" rel="noopener">
+              <img src="${esc(im.url)}" alt="${esc(im.name)}" onerror="this.style.opacity='.35'">
+            </a>
+            <p>${esc(im.name)} <span class="muted">(new link)</span></p>
+            <button type="button" onclick="pendingImages.splice(${i}, 1);drawPending()">✕</button>
+          </div>
+        `)
+      ].join('');
+    }
+
+    function removeExistingImage(caseId, i) {
+      let c = cases.find(x => x.id === caseId);
+      if (!c) return;
+      c.images.splice(i, 1);
+      save();
+      drawPending();
+    }
+
+    function saveCase(e) {
+      e.preventDefault();
+      let f = new FormData(e.target), idv = f.get('id'), existing = cases.find(x => x.id === idv),
+          c = {
+            ...(existing || {}),
+            id: idv,
+            title: f.get('title').trim(),
+            type: f.get('type'),
+            status: f.get('status'),
+            priority: f.get('priority'),
+            assigned: f.get('assigned').trim(),
+            subject: f.get('subject').trim(),
+            otherParties: f.get('otherParties').trim(),
+            openedBy: existing?.openedBy || profile.name,
+            openedDate: f.get('openedDate'),
+            incidentDate: f.get('incidentDate'),
+            location: f.get('location').trim(),
+            nextHearing: f.get('nextHearing'),
+            summary: f.get('summary').trim(),
+            allegations: f.get('allegations').trim(),
+            evidenceNotes: f.get('evidenceNotes').trim(),
+            legalNotes: f.get('legalNotes').trim(),
+            outcome: f.get('outcome').trim(),
+            images: [...(existing?.images || []), ...pendingImages],
+            notes: [...(existing?.notes || [])],
+            createdAt: existing?.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+
+      let note = f.get('newNote').trim();
+      if (note) c.notes.unshift({ text: note, by: profile.name, at: now() });
+
+      if (existing) {
+        cases = cases.map(x => x.id === idv ? c : x);
+        log('Updated case', idv, c.title);
+      } else {
+        cases.unshift(c);
+        log('Opened case', idv, c.title);
+      }
+
+      try {
+        save();
+      } catch (err) {
+        toast('Storage full. Export backup and remove some images.');
+        return;
+      }
+      closeModal();
+      render();
+      toast(existing ? 'Case updated' : 'Case created');
+    }
+
+    function closeModal() {
+      document.getElementById('modalroot').innerHTML = '';
+      selectedCase = null;
+      pendingImages = [];
+    }
+
+    function viewCase(idv) {
+      let c = cases.find(x => x.id === idv);
+      if (!c) return;
+      selectedCase = idv;
+      
+      document.getElementById('modalroot').innerHTML = `
+        <div class="modalback" onclick="if(event.target===this)closeModal()">
+          <section class="modal">
+            <div class="modalhead">
+              <div>
+                <div class="eyebrow">CASE FILE / ${esc(c.type)}</div>
+                <h2>${esc(c.title)}</h2>
+                <div class="muted" style="font-size:11px">${esc(c.id)} · Opened ${date(c.openedDate)}</div>
+              </div>
+              <button class="close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="formbody">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:17px">
+                ${statusTag(c.status)}
+                <span class="tag" style="background:#292e36;color:#d4d9df">${esc(c.priority)} priority</span>
+                <span class="tag" style="background:#292e36;color:#d4d9df">${(c.images || []).length} evidence images</span>
+              </div>
+              <div class="detailgrid">
+                ${detail('Primary party', c.subject)}
+                ${detail('Assigned staff', c.assigned)}
+                ${detail('Other parties / witnesses', c.otherParties)}
+                ${detail('Location', c.location)}
+                ${detail('Incident date', date(c.incidentDate))}
+                ${detail('Next hearing', date(c.nextHearing))}
+                ${detail('Case summary', c.summary, true)}
+                ${detail('Allegations / claims', c.allegations, true)}
+                ${detail('Evidence notes', c.evidenceNotes, true)}
+                ${detail('Legal / internal notes', c.legalNotes, true)}
+                ${detail('Outcome / resolution', c.outcome, true)}
+              </div>
+              <div style="margin-top:18px">
+                <div class="panelhead"><div><h2>Evidence gallery</h2><p>Images attached to this case</p></div></div>
+                ${(c.images || []).length ? `<div class="evidencegrid">${c.images.map(im => `
+                  <div class="evidence">
+                    <a href="${im.url || im.data || ''}" target="_blank" rel="noopener">
+                      <img src="${im.url || im.data || ''}" alt="${esc(im.name)}">
+                    </a>
+                    <p>${esc(im.name)}</p>
+                  </div>
+                `).join('')}</div>` : '<div class="empty">No image evidence attached.</div>'}
+              </div>
+              <div style="margin-top:20px">
+                <div class="panelhead"><div><h2>Case notes</h2><p>Updates recorded on this file</p></div></div>
+                ${(c.notes || []).length ? activityList(c.notes.map(n => ({ action: 'Case note', detail: n.text, by: n.by, at: n.at }))) : '<div class="empty">No case notes recorded.</div>'}
+              </div>
+            </div>
+            <div class="formfoot">
+              <button class="btn danger" onclick="deleteCase('${c.id}')">Delete case</button>
+              <div style="display:flex;gap:8px">
+                <button class="btn" onclick="closeModal()">Close</button>
+                <button class="btn primary" onclick="openCaseForm('${c.id}')">✎ Edit case</button>
+              </div>
+            </div>
+          </section>
         </div>
-
-        <div class="value-card fade">
-            <div class="value-number">07</div>
-            <h3>PROFESSIONALISM</h3>
-            <p>
-                Maintain the highest standard of behaviour,
-                appearance and operational conduct.
-            </p>
-        </div>
-
-        <div class="value-card fade">
-            <div class="value-number">08</div>
-            <h3>RESTRAINT</h3>
-            <p>
-                Authority must be exercised responsibly, proportionately
-                and only when necessary.
-            </p>
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- COMMAND -->
-<section id="command">
-
-    <div class="section-heading fade">
-        <small>03 / Leadership</small>
-        <h2>STF COMMAND</h2>
-        <p>
-            The chain of command provides accountability, direction and
-            operational consistency.
-        </p>
-    </div>
-
-    <div class="command-grid">
-
-        <div class="person-card fade">
-            <div class="rank">STF COMMANDER</div>
-            <h3>DARIO CLAW</h3>
-            <div class="callsign"><b>CA-1</b></div>
-            <div class="assignment"><b>Unit Command • Strategic Leadership</b></div>
-        </div>
-
-        <div class="person-card fade">
-            <div class="rank">STF Member</div>
-            <h3>BARRY BOSTICK</h3>
-            <div class="callsign"><b>C-1</b></div>
-        </div>
-
-        <div class="person-card fade">
-            <div class="rank">STF Member</div>
-            <h3>TYLER BISHOP</h3>
-            <div class="callsign"><b>C-2</b></div>
-        </div>
-
-        <div class="person-card fade">
-            <div class="rank">STF Member</div>
-            <h3>VACANT</h3>
-            <div class="callsign"><b>C-3</b></div>
-        </div>
-
-        <div class="person-card fade">
-            <div class="rank">STF Member</div>
-            <h3>VACANT</h3>
-            <div class="callsign"><b>C-4</b></div>
-        </div>
-
-        <div class="person-card fade">
-            <div class="rank">STF Member</div>
-            <h3>VACANT</h3>
-            <div class="callsign"><b>C-5</b></div>
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- DOCTRINE -->
-<section>
-
-    <div class="section-heading fade">
-        <small>05 / Doctrine</small>
-        <h2>STF DOCTRINE</h2>
-    </div>
-
-    <div class="doctrine-grid">
-
-        <div class="doctrine-card fade">
-            <span>01</span>
-            <h3>CHAIN OF COMMAND</h3>
-            <p>
-                Every operator understands who they report to and who
-                holds operational authority.
-            </p>
-        </div>
-
-        <div class="doctrine-card fade">
-            <span>02</span>
-            <h3>COMMUNICATION</h3>
-            <p>
-                Clear, concise and professional communication is required
-                before, during and after operations.
-            </p>
-        </div>
-
-        <div class="doctrine-card fade">
-            <span>03</span>
-            <h3>OPERATIONAL CONTROL</h3>
-            <p>
-                Operators maintain awareness, follow briefings and
-                avoid unnecessary escalation.
-            </p>
-        </div>
-
-        <div class="doctrine-card fade">
-            <span>04</span>
-            <h3>PROFESSIONAL CONDUCT</h3>
-            <p>
-                STF personnel remain professional while representing the
-                unit both on and off duty.
-            </p>
-        </div>
-
-        <div class="doctrine-card fade">
-            <span>05</span>
-            <h3>ACCOUNTABILITY</h3>
-            <p>
-                Operational decisions are documented and members may be
-                required to explain their actions.
-            </p>
-        </div>
-
-        <div class="doctrine-card fade">
-            <span>06</span>
-            <h3>MISSION FIRST</h3>
-            <p>
-                Personal ego never takes priority over the safety,
-                objectives and reputation of the unit.
-            </p>
-        </div>
-
-    </div>
-
-</section>
-
-<!-- CODE OF CONDUCT -->
-<section>
-
-    <div class="section-heading fade">
-        <small>07 / Standards</small>
-        <h2>CODE OF CONDUCT</h2>
-    </div>
-
-    <div class="conduct">
-
-        <div class="conduct-card fade">
-
-            <h3>EVERY STF MEMBER SHALL</h3>
-
-            <ul>
-                <li>Follow the chain of command.</li>
-                <li>Remain professional while on duty.</li>
-                <li>Follow lawful orders.</li>
-                <li>Communicate clearly with other units.</li>
-                <li>Protect the reputation of the STF.</li>
-                <li>Respect civilians and fellow officers.</li>
-                <li>Accept responsibility for their actions.</li>
-                <li>Report serious misconduct through command.</li>
-            </ul>
-
-        </div>
-
-        <div class="conduct-card fade">
-
-            <h3>ZERO-TOLERANCE CONDUCT</h3>
-
-            <ul>
-                <li>Abuse of STF authority.</li>
-                <li>Deliberate corruption or dishonesty.</li>
-                <li>Unauthorised disclosure of operational information.</li>
-                <li>Disrespect toward command or colleagues.</li>
-                <li>Reckless behaviour that endangers others.</li>
-                <li>Using STF status for personal benefit.</li>
-                <li>Ignoring legitimate command instructions.</li>
-                <li>Conduct that damages the unit's reputation.</li>
-            </ul>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- OPERATIONS -->
-<section>
-
-    <div class="section-heading fade">
-        <small>08 / Operations</small>
-        <h2>OPERATIONAL READINESS</h2>
-    </div>
-
-    <div class="mission">
-
-        <div class="mission-box fade">
-
-            <h3>BEFORE DEPLOYMENT</h3>
-
-            <p>
-                Every operation should begin with a clear objective,
-                briefing, assignment of responsibilities and confirmation
-                of the chain of command.
-            </p>
-
-        </div>
-
-        <div class="mission-box fade">
-
-            <h3>AFTER DEPLOYMENT</h3>
-
-            <p>
-                Operators complete a debrief, report significant events
-                and identify lessons that can improve future operations.
-            </p>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- FOOTER -->
-<footer>
-
-    <div class="footer-logo">STF</div>
-
-    <p>
-        SPECIAL TASK FORCE • UNITY REJECTS GOVERNMENT
-    </p>
-
-    <div class="footer-bottom">
-        INTERNAL COMMAND PORTAL • ESTABLISHED BY DARIO CLAW CA-1
-    </div>
-
-</footer>
-
-
-<script>
-
-const observer = new IntersectionObserver((entries) => {
-
-    entries.forEach(entry => {
-
-        if(entry.isIntersecting) {
-            entry.target.classList.add("show");
+      `;
+    }
+
+    function detail(label, value, wide = false) {
+      return `<div class="detailbox" ${wide ? 'style="grid-column:1/-1"' : ''}><small>${label}</small><p>${esc(value || '—')}</p></div>`;
+    }
+
+    function deleteCase(idv) {
+      let c = cases.find(x => x.id === idv);
+      if (!c || !confirm(`Permanently delete ${idv} — ${c.title}? Export a backup first if needed.`)) return;
+      cases = cases.filter(x => x.id !== idv);
+      log('Deleted case', idv, c.title);
+      save();
+      closeModal();
+      render();
+      toast('Case deleted');
+    }
+
+    function download(name, content, type) {
+      let blob = new Blob([content], { type }),
+          url = URL.createObjectURL(blob),
+          a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function exportCases() {
+      download('unity-law-doj-backup-' + new Date().toISOString().slice(0, 10) + '.json', JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), cases, logs, profile }, null, 2), 'application/json');
+    }
+
+    function exportLog() {
+      download('unity-law-doj-activity-log.json', JSON.stringify(logs, null, 2), 'application/json');
+    }
+
+    function exportCsv() {
+      let cols = ['id', 'title', 'type', 'status', 'priority', 'subject', 'otherParties', 'assigned', 'openedBy', 'openedDate', 'incidentDate', 'location', 'nextHearing', 'summary', 'allegations', 'evidenceNotes', 'legalNotes', 'outcome'];
+      let csv = [cols.join(','), ...cases.map(c => cols.map(k => '"' + String(c[k] ?? '').replace(/"/g, '""') + '"').join(','))].join('\r\n');
+      download('unity-law-doj-cases.csv', '\ufeff' + csv, 'text/csv;charset=utf-8');
+    }
+
+    function clearLog() {
+      if (!confirm('Clear the activity log? This cannot be undone.')) return;
+      logs = [];
+      save();
+      render();
+    }
+
+    function clearAll() {
+      if (!confirm('Delete ALL local cases, images and activity records? Export a backup first. This cannot be undone.')) return;
+      cases = [];
+      logs = [];
+      save();
+      render();
+      toast('Local case data cleared');
+    }
+
+    function importBackup(e) {
+      let file = e.target.files[0];
+      if (!file) return;
+      let reader = new FileReader();
+      reader.onload = () => {
+        try {
+          let data = JSON.parse(reader.result);
+          if (!Array.isArray(data.cases)) throw Error('Invalid backup');
+          if (!confirm(`Import ${data.cases.length} case files? This replaces the current local cases and log.`)) return;
+          cases = data.cases;
+          logs = Array.isArray(data.logs) ? data.logs : [];
+          if (data.profile) profile = data.profile;
+          save();
+          render();
+          toast('Backup imported');
+        } catch (err) {
+          alert('Could not import this backup. Please select a valid DOJ JSON backup.');
         }
+      };
+      reader.readAsText(file);
+    }
 
+    document.addEventListener('submit', e => {
+      if (e.target.id === 'profileForm') {
+        e.preventDefault();
+        let f = new FormData(e.target);
+        profile = {
+          name: f.get('name').trim() || 'DOJ Staff',
+          rank: f.get('rank').trim() || 'Department of Justice'
+        };
+        save();
+        render();
+        toast('Profile saved');
+      }
     });
 
-}, {
-    threshold: 0.12
-});
-
-
-document.querySelectorAll(".fade").forEach(el => {
-    observer.observe(el);
-});
-
-
-/* ACTIVE NAVIGATION */
-
-const sections = document.querySelectorAll("section, header");
-const navLinks = document.querySelectorAll(".nav-links a");
-
-window.addEventListener("scroll", () => {
-
-    let current = "";
-
-    sections.forEach(section => {
-
-        const sectionTop = section.offsetTop;
-
-        if(pageYOffset >= sectionTop - 150) {
-            current = section.getAttribute("id");
-        }
-
-    });
-
-    navLinks.forEach(link => {
-
-        link.style.color = "";
-
-        if(link.getAttribute("href") === "#" + current) {
-            link.style.color = "#ffffff";
-        }
-
-    });
-
-});
-
-</script>
-
+    // Start with an empty case register; no fabricated citizen/case records.
+    render();
+  </script>
 </body>
 </html>
-```

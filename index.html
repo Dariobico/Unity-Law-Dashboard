@@ -1004,6 +1004,7 @@
         <nav class="nav">
           <button class="active" data-page="dashboard"><span class="ico">▦</span>Dashboard</button>
           <button data-page="cases"><span class="ico">▤</span>Case files</button>
+          <button data-page="warrants"><span class="ico">⚖</span>Warrants</button>
           <button data-page="retainers"><span class="ico">▧</span>Retainer agreements</button>
           <button data-page="businesses"><span class="ico">▣</span>Business registrations</button>
           <button data-page="staff"><span class="ico">♙</span>Staff list</button>
@@ -1059,18 +1060,18 @@
       measurementId: "G-ZMX98RTPP9"
     };
 
-    const KEY = 'unity-law_doj_cases_v1', LOGKEY = 'unity-law_doj_log_v1', PROFILE = 'unity-law_doj_profile_v1', RETAINERKEY = 'unity-law_doj_retainers_v1', BUSINESSKEY = 'unity-law_doj_businesses_v1', STAFFKEY = 'unity-law_doj_staff_v1';
+    const KEY = 'unity-law_doj_cases_v1', LOGKEY = 'unity-law_doj_log_v1', PROFILE = 'unity-law_doj_profile_v1', RETAINERKEY = 'unity-law_doj_retainers_v1', BUSINESSKEY = 'unity-law_doj_businesses_v1', STAFFKEY = 'unity-law_doj_staff_v1', WARRANTKEY = 'unity-law_doj_warrants_v1';
     const statuses = ['Open', 'Under Review', 'Court Scheduled', 'Closed'];
     const types = ['Criminal', 'Civil Dispute', 'Business Compliance', 'Property', 'Name Change', 'Marriage / Family', 'Contract', 'Government Review', 'Other'];
     const priorities = ['Low', 'Medium', 'High'];
-    let cases = load(KEY, []), logs = load(LOGKEY, []), retainers = load(RETAINERKEY, []), businesses = load(BUSINESSKEY, []), staffMembers = load(STAFFKEY, []), profile = load(PROFILE, {name:'DOJ Staff',rank:'Department of Justice'}),
+    let cases = load(KEY, []), logs = load(LOGKEY, []), retainers = load(RETAINERKEY, []), businesses = load(BUSINESSKEY, []), staffMembers = load(STAFFKEY, []), warrants = load(WARRANTKEY, []), profile = load(PROFILE, {name:'DOJ Staff',rank:'Department of Justice'}),
         page = 'dashboard', searchText = '', statusFilter = 'All', typeFilter = 'All', selectedCase = null, pendingImages = [];
 
     let auth = null, db = null, currentStaff = null, cloudReady = false, cloudUnsubscribe = null, saveQueue = Promise.resolve();
     const firebaseConfigured = firebaseConfig.apiKey !== 'PASTE_API_KEY_HERE' && firebaseConfig.projectId !== 'PASTE_PROJECT_ID_HERE' && firebaseConfig.appId !== 'PASTE_APP_ID_HERE';
 
     function load(k, fallback) { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch (e) { return fallback; } }
-    function cacheLocally() { localStorage.setItem(KEY, JSON.stringify(cases)); localStorage.setItem(LOGKEY, JSON.stringify(logs)); localStorage.setItem(RETAINERKEY, JSON.stringify(retainers)); localStorage.setItem(BUSINESSKEY, JSON.stringify(businesses)); localStorage.setItem(STAFFKEY, JSON.stringify(staffMembers)); localStorage.setItem(PROFILE, JSON.stringify(profile)); }
+    function cacheLocally() { localStorage.setItem(KEY, JSON.stringify(cases)); localStorage.setItem(LOGKEY, JSON.stringify(logs)); localStorage.setItem(RETAINERKEY, JSON.stringify(retainers)); localStorage.setItem(BUSINESSKEY, JSON.stringify(businesses)); localStorage.setItem(STAFFKEY, JSON.stringify(staffMembers)); localStorage.setItem(WARRANTKEY, JSON.stringify(warrants)); localStorage.setItem(PROFILE, JSON.stringify(profile)); }
     function setAuthMessage(message, error=false) { const el=document.getElementById('authmessage'); if(el){el.textContent=message;el.style.color=error?'#ef7777':'#e9b45d';} }
     function setCloudStatus(message, error=false) { const el=document.getElementById('cloudstatus'); if(el){el.textContent=message;el.style.color=error?'#ef7777':'#58c69b';} }
 
@@ -1081,7 +1082,7 @@
       cacheLocally();
       if (!currentStaff || !db || !cloudReady) return;
       // Queue writes so rapid actions are not silently dropped while another save is in flight.
-      saveQueue = saveQueue.then(() => stateRef().set({cases, logs, retainers, businesses, staffMembers, profile, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentStaff.email || currentStaff.uid}, {merge:true}))
+      saveQueue = saveQueue.then(() => stateRef().set({cases, logs, retainers, businesses, staffMembers, warrants, profile, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentStaff.email || currentStaff.uid}, {merge:true}))
         .then(()=>setCloudStatus('☁ Synced'))
         .catch(err=>{console.error(err);setCloudStatus('Cloud save failed',true);toast('Cloud save failed. Check Firebase rules and connection.');});
     }
@@ -1138,11 +1139,12 @@
               retainers=Array.isArray(data.retainers)?data.retainers:[];
               businesses=Array.isArray(data.businesses)?data.businesses:[];
               staffMembers=Array.isArray(data.staffMembers)?data.staffMembers:[];
+              warrants=Array.isArray(data.warrants)?data.warrants:[];
               profile=data.profile && typeof data.profile==='object'?data.profile:{name:user.displayName||user.email||'DOJ Staff',rank:'Department of Justice'};
               cacheLocally(); cloudReady=true; setCloudStatus('☁ Synced'); render();
             } else {
               // First signed-in staff member seeds the shared document from this browser's existing local data.
-              const legacy={cases:load(KEY,[]),logs:load(LOGKEY,[]),retainers:load(RETAINERKEY,[]),businesses:load(BUSINESSKEY,[]),staffMembers:load(STAFFKEY,[]),profile:load(PROFILE,{name:user.displayName||user.email||'DOJ Staff',rank:'Department of Justice'})};
+              const legacy={cases:load(KEY,[]),logs:load(LOGKEY,[]),retainers:load(RETAINERKEY,[]),businesses:load(BUSINESSKEY,[]),staffMembers:load(STAFFKEY,[]),warrants:load(WARRANTKEY,[]),profile:load(PROFILE,{name:user.displayName||user.email||'DOJ Staff',rank:'Department of Justice'})};
               try { await stateRef().set({...legacy,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:user.email||user.uid}); }
               catch(createErr) { if(createErr.code!=='already-exists') throw createErr; }
             }
@@ -1209,6 +1211,7 @@
       
       if (page === 'dashboard') root.innerHTML = dashboard();
       else if (page === 'cases') root.innerHTML = casesPage();
+      else if (page === 'warrants') root.innerHTML = warrantsPage();
       else if (page === 'retainers') root.innerHTML = retainersPage();
       else if (page === 'businesses') root.innerHTML = businessesPage();
       else if (page === 'staff') root.innerHTML = staffPage();
@@ -1371,6 +1374,65 @@
           </div>
         </div>
       `;
+    }
+
+    const WARRANT_TYPES = ['Arrest Warrant','Search Warrant','Bench Warrant','Other'];
+    const WARRANT_STATUSES = ['Active','Executed','Expired','Revoked'];
+
+    function warrantsPage() {
+      const active = warrants.filter(w => w.status === 'Active').length;
+      const executed = warrants.filter(w => w.status === 'Executed').length;
+      const ordered = [...warrants].sort((a,b)=>(b.issuedDate||'').localeCompare(a.issuedDate||''));
+      return `
+        ${head('LEGAL AUTHORISATIONS', 'Warrant register', 'Create, review and track warrant records and their current status.', `<button class="btn primary" onclick="openWarrantForm()">＋ Issue warrant</button>`)}
+        <div class="stats">
+          ${stat('Total warrants','All records',warrants.length,'⚖')}
+          ${stat('Active warrants','Currently active',active,'!')}
+          ${stat('Executed warrants','Marked executed',executed,'✓')}
+        </div>
+        <section class="panel" style="margin-top:18px">
+          <div class="panelhead"><div><h2>Warrant register</h2><p>Record the authority, subject, grounds, dates and an optional image/document link.</p></div></div>
+          ${!ordered.length ? `<div class="empty"><b>No warrants recorded</b>Select “Issue warrant” to add a warrant record.</div>` : `<div class="tablewrap"><table><thead><tr><th>Warrant no.</th><th>Type / Subject</th><th>Issued</th><th>Expiry</th><th>Authorised by</th><th>Status</th><th>Actions</th></tr></thead><tbody>${ordered.map(w=>`<tr><td><b>${esc(w.number)}</b></td><td>${esc(w.type)}<div class="muted">${esc(w.subject)}</div></td><td>${esc(w.issuedDate||'—')}</td><td>${esc(w.expiryDate||'—')}</td><td>${esc(w.authorisedBy||'—')}</td><td>${statusTag(w.status||'Active')}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" onclick="viewWarrant('${w.id}')">View</button><button class="btn small" onclick="openWarrantForm('${w.id}')">Edit</button><button class="btn small danger" onclick="deleteWarrant('${w.id}')">Delete</button></div></td></tr>`).join('')}</tbody></table></div>`}
+        </section>`;
+    }
+
+    function openWarrantForm(warrantId = null) {
+      const w = warrants.find(x=>x.id===warrantId) || {id:'WAR-'+new Date().getFullYear()+'-'+Math.random().toString(36).slice(2,7).toUpperCase(),number:'',type:'Arrest Warrant',subject:'',subjectDetails:'',issuedDate:new Date().toISOString().slice(0,10),expiryDate:'',requestingOfficer:'',authorisedBy:'',status:'Active',grounds:'',conditions:'',documentUrl:'',notes:''};
+      document.getElementById('modalroot').innerHTML = `<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">WARRANT MANAGEMENT</div><h2>${warrantId?'Edit warrant':'Issue warrant record'}</h2><div class="muted" style="font-size:11px">Record reference: ${esc(w.id)}</div></div><button class="close" onclick="closeModal()">✕</button></div><form id="warrantForm"><div class="formbody"><input type="hidden" name="id" value="${esc(w.id)}"><div class="formgrid">
+        <div class="field"><label>WARRANT NUMBER *</label><input name="number" required maxlength="80" value="${esc(w.number)}" placeholder="e.g. WAR-2026-001"></div>
+        <div class="field"><label>WARRANT TYPE *</label><select name="type" required>${WARRANT_TYPES.map(x=>`<option ${w.type===x?'selected':''}>${esc(x)}</option>`).join('')}</select></div>
+        <div class="field span2"><label>SUBJECT / PERSON OR LOCATION *</label><input name="subject" required maxlength="180" value="${esc(w.subject)}" placeholder="Full name or location covered by warrant"></div>
+        <div class="field"><label>ISSUED DATE *</label><input type="date" name="issuedDate" required value="${esc(w.issuedDate)}"></div>
+        <div class="field"><label>EXPIRY DATE</label><input type="date" name="expiryDate" value="${esc(w.expiryDate)}"></div>
+        <div class="field"><label>REQUESTING OFFICER</label><input name="requestingOfficer" maxlength="140" value="${esc(w.requestingOfficer)}"></div>
+        <div class="field"><label>AUTHORISED BY</label><input name="authorisedBy" maxlength="140" value="${esc(w.authorisedBy)}" placeholder="Judge / authorised official"></div>
+        <div class="field"><label>STATUS</label><select name="status">${WARRANT_STATUSES.map(x=>`<option ${w.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
+        <div class="field span2"><label>GROUNDS / REASON *</label><textarea name="grounds" required rows="3" maxlength="3000" placeholder="Summarise the grounds supporting this warrant">${esc(w.grounds)}</textarea></div>
+        <div class="field span2"><label>CONDITIONS / SCOPE</label><textarea name="conditions" rows="2" maxlength="2000" placeholder="Scope, restrictions or conditions">${esc(w.conditions)}</textarea></div>
+        <div class="field span2"><label>IMAGE / DOCUMENT LINK (OPTIONAL)</label><input type="url" name="documentUrl" value="${esc(w.documentUrl)}" placeholder="https://... direct image or document link"><small class="muted">Paste a shareable link to the warrant image/document.</small></div>
+        <div class="field span2"><label>INTERNAL NOTES</label><textarea name="notes" rows="2" maxlength="2000">${esc(w.notes)}</textarea></div>
+        </div></div><div class="formfoot"><button type="button" class="btn" onclick="closeModal()">Cancel</button><button type="submit" class="btn primary">${warrantId?'Save changes':'Save warrant'}</button></div></form></section></div>`;
+      document.getElementById('warrantForm').onsubmit = saveWarrant;
+    }
+
+    function saveWarrant(e) {
+      e.preventDefault(); const f=new FormData(e.target); const idv=String(f.get('id')||'');
+      const existing=warrants.find(x=>x.id===idv);
+      const item={id:idv,number:String(f.get('number')||'').trim(),type:String(f.get('type')||''),subject:String(f.get('subject')||'').trim(),issuedDate:String(f.get('issuedDate')||''),expiryDate:String(f.get('expiryDate')||''),requestingOfficer:String(f.get('requestingOfficer')||'').trim(),authorisedBy:String(f.get('authorisedBy')||'').trim(),status:String(f.get('status')||'Active'),grounds:String(f.get('grounds')||'').trim(),conditions:String(f.get('conditions')||'').trim(),documentUrl:String(f.get('documentUrl')||'').trim(),notes:String(f.get('notes')||'').trim(),createdAt:existing?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+      if(existing) warrants=warrants.map(x=>x.id===idv?item:x); else warrants.unshift(item);
+      save(); log(existing?'Updated warrant':'Recorded warrant',item.number,item.subject+' — '+item.type); closeModal(); render(); toast(existing?'Warrant updated.':'Warrant recorded.');
+    }
+
+    function viewWarrant(warrantId) {
+      const w=warrants.find(x=>x.id===warrantId); if(!w)return;
+      const detail=(label,value)=>`<div class="detailbox"><small>${label}</small><p>${esc(value||'—')}</p></div>`;
+      document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">WARRANT RECORD</div><h2>${esc(w.number)}</h2><div class="muted">${esc(w.type)} · ${esc(w.status)}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="detailgrid">${detail('Subject',w.subject)}${detail('Issued date',w.issuedDate)}${detail('Expiry date',w.expiryDate)}${detail('Requesting officer',w.requestingOfficer)}${detail('Authorised by',w.authorisedBy)}${detail('Status',w.status)}${detail('Grounds / reason',w.grounds)}${detail('Conditions / scope',w.conditions)}${detail('Internal notes',w.notes)}</div>${w.documentUrl?`<p style="margin-top:16px"><a class="btn" href="${esc(w.documentUrl)}" target="_blank" rel="noopener">Open warrant image / document ↗</a></p>`:''}</div><div class="formfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openWarrantForm('${w.id}')">Edit warrant</button></div></section></div>`;
+    }
+
+    function deleteWarrant(warrantId) {
+      const w=warrants.find(x=>x.id===warrantId); if(!w)return;
+      if(!confirm(`Delete warrant ${w.number} for ${w.subject}?`))return;
+      warrants=warrants.filter(x=>x.id!==warrantId); save(); log('Deleted warrant',w.number,w.subject); render(); toast('Warrant deleted.');
     }
 
     function casesPage() {

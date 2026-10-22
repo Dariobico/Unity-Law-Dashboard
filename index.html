@@ -1041,7 +1041,6 @@
 
       return `
         ${head('OVERVIEW', 'DOJ Dashboard', 'Case activity and department workload at a glance.', `<button class="btn primary" onclick="openCaseForm()">＋ Open new case</button>`)}
-        <div class="notice">⚠ <b>Staff notice:</b> This prototype saves records in this browser only. Do not enter real personal or sensitive information until shared authentication and secure storage are configured.</div>
         <div class="stats">
           ${stat('Open cases', 'Awaiting action', open, '◷')}
           ${stat('Under review', 'Currently being reviewed', review, '⌕')}

@@ -878,6 +878,19 @@
       .pagehead h1 { font-size: 22px; }
     }
 
+
+    /* Short branded startup screen */
+    #loadingScreen{position:fixed;inset:0;z-index:100000;background:#0c0e11;display:flex;align-items:center;justify-content:center;padding:20px;opacity:1;visibility:visible;transition:opacity .28s ease,visibility .28s ease}
+    #loadingScreen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+    .loadingInner{text-align:center;color:#f1f3f5}
+    .loadingSeal{width:58px;height:58px;margin:0 auto 15px;border:1px solid #c0c5ce;border-radius:50%;display:grid;place-items:center;color:#e5e7eb;font-size:29px;box-shadow:0 0 24px #c0c5ce12}
+    .loadingTitle{font-size:16px;font-weight:800;letter-spacing:2px}
+    .loadingSub{font-size:10px;color:#8f98a5;letter-spacing:2px;margin-top:6px}
+    .loadingTrack{height:3px;width:116px;background:#272c34;border-radius:9px;margin:20px auto 0;overflow:hidden}
+    .loadingTrack span{display:block;width:40%;height:100%;background:#c0c5ce;border-radius:9px;animation:loadingMove .8s ease-in-out infinite alternate}
+    @keyframes loadingMove{from{transform:translateX(0)}to{transform:translateX(150%)}}
+    @media(prefers-reduced-motion:reduce){#loadingScreen{transition:none}.loadingTrack span{animation:none;width:100%}}
+
     .authgate{position:fixed;inset:0;z-index:99999;background:#0c0e11;display:flex;align-items:center;justify-content:center;padding:22px}
     .authcard{width:min(440px,100%);background:#14171c;border:1px solid #292e36;border-radius:18px;padding:28px;box-shadow:0 24px 80px #0008}
     .authcard h1{font-size:22px;margin:0 0 8px}.authcard p{color:#969eaa;margin:0 0 20px}
@@ -932,6 +945,14 @@
   </style>
 </head>
 <body>
+  <div id="loadingScreen" role="status" aria-label="Loading Unity Law DOJ">
+    <div class="loadingInner">
+      <div class="loadingSeal">⚖</div>
+      <div class="loadingTitle">UNITY LAW DOJ</div>
+      <div class="loadingSub">JUSTICE • INTEGRITY • SERVICE</div>
+      <div class="loadingTrack"><span></span></div>
+    </div>
+  </div>
   <section class="authgate" id="authgate">
     <form class="authcard" id="loginForm">
       <div style="font-size:30px;margin-bottom:10px">⚖</div>
@@ -1041,14 +1062,39 @@
         .catch(err=>{console.error(err);setCloudStatus('Cloud save failed',true);toast('Cloud save failed. Check Firebase rules and connection.');});
     }
 
+    let loadingScreenHidden = false;
+    const loadingScreenStartedAt = Date.now();
+    const LOADING_SCREEN_DURATION = 8000;
+    function hideLoadingScreen() {
+      if (loadingScreenHidden) return;
+      // Always keep the splash visible for the full 10 seconds, even if Firebase responds early.
+      const elapsed = Date.now() - loadingScreenStartedAt;
+      const remaining = LOADING_SCREEN_DURATION - elapsed;
+      if (remaining > 0) {
+        setTimeout(hideLoadingScreen, remaining);
+        return;
+      }
+      loadingScreenHidden = true;
+      const screen = document.getElementById('loadingScreen');
+      if (screen) {
+        screen.classList.add('hidden');
+        setTimeout(() => screen.remove(), 350);
+      }
+    }
+    // Failsafe still respects the full 10-second display duration.
+    const loadingFailsafe = setTimeout(hideLoadingScreen, LOADING_SCREEN_DURATION);
+
     function initialiseFirebase() {
       if (!firebaseConfigured) {
         setAuthMessage('Firebase is not configured yet. Complete the setup and paste your Web App config into firebaseConfig in index.html.', true);
+        setTimeout(hideLoadingScreen, 650);
         return;
       }
       try { firebase.initializeApp(firebaseConfig); auth=firebase.auth(); db=firebase.firestore(); }
-      catch(err) { console.error(err); setAuthMessage('Firebase could not start: '+err.message,true); return; }
+      catch(err) { console.error(err); setAuthMessage('Firebase could not start: '+err.message,true); setTimeout(hideLoadingScreen, 650); return; }
       auth.onAuthStateChanged(async user => {
+        clearTimeout(loadingFailsafe);
+        setTimeout(hideLoadingScreen, 650);
         currentStaff=user||null;
         const gate=document.getElementById('authgate'), app=document.getElementById('portalApp');
         if (cloudUnsubscribe) { cloudUnsubscribe(); cloudUnsubscribe=null; }

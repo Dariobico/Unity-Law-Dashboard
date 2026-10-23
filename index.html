@@ -964,7 +964,10 @@
       img, video, canvas { max-width: 100%; }
     }
 
-  </style>
+  
+    @media (max-width: 900px) { .calendar-layout { grid-template-columns: minmax(0,1fr) !important; } }
+    @media (max-width: 600px) { .calendar-grid { gap: 3px !important; } .calendar-grid > div { min-height: 66px !important; padding: 4px 2px !important; font-size: 10px !important; } .calendar-grid button { font-size: 9px !important; padding: 3px 2px !important; } }
+    </style>
 </head>
 <body>
   <div id="loadingScreen" role="status" aria-label="Loading Unity Law DOJ">
@@ -1005,6 +1008,7 @@
           <button class="active" data-page="dashboard"><span class="ico">▦</span>Dashboard</button>
           <button data-page="cases"><span class="ico">▤</span>Case files</button>
           <button data-page="warrants"><span class="ico">⚖</span>Warrants</button>
+          <button data-page="calendar"><span class="ico">▦</span>Court calendar</button>
           <button data-page="retainers"><span class="ico">▧</span>Retainer agreements</button>
           <button data-page="businesses"><span class="ico">▣</span>Business registrations</button>
           <button data-page="staff"><span class="ico">♙</span>Staff list</button>
@@ -1060,18 +1064,18 @@
       measurementId: "G-ZMX98RTPP9"
     };
 
-    const KEY = 'unity-law_doj_cases_v1', LOGKEY = 'unity-law_doj_log_v1', PROFILE = 'unity-law_doj_profile_v1', RETAINERKEY = 'unity-law_doj_retainers_v1', BUSINESSKEY = 'unity-law_doj_businesses_v1', STAFFKEY = 'unity-law_doj_staff_v1', WARRANTKEY = 'unity-law_doj_warrants_v1';
+    const KEY = 'unity-law_doj_cases_v1', LOGKEY = 'unity-law_doj_log_v1', PROFILE = 'unity-law_doj_profile_v1', RETAINERKEY = 'unity-law_doj_retainers_v1', BUSINESSKEY = 'unity-law_doj_businesses_v1', STAFFKEY = 'unity-law_doj_staff_v1', WARRANTKEY = 'unity-law_doj_warrants_v1', CALENDARKEY = 'unity-law_doj_calendar_v1';
     const statuses = ['Open', 'Under Review', 'Court Scheduled', 'Closed'];
     const types = ['Criminal', 'Civil Dispute', 'Business Compliance', 'Property', 'Name Change', 'Marriage / Family', 'Contract', 'Government Review', 'Other'];
     const priorities = ['Low', 'Medium', 'High'];
-    let cases = load(KEY, []), logs = load(LOGKEY, []), retainers = load(RETAINERKEY, []), businesses = load(BUSINESSKEY, []), staffMembers = load(STAFFKEY, []), warrants = load(WARRANTKEY, []), profile = load(PROFILE, {name:'DOJ Staff',rank:'Department of Justice'}),
-        page = 'dashboard', searchText = '', statusFilter = 'All', typeFilter = 'All', selectedCase = null, pendingImages = [];
+    let cases = load(KEY, []), logs = load(LOGKEY, []), retainers = load(RETAINERKEY, []), businesses = load(BUSINESSKEY, []), staffMembers = load(STAFFKEY, []), warrants = load(WARRANTKEY, []), calendarEvents = load(CALENDARKEY, []), profile = load(PROFILE, {name:'DOJ Staff',rank:'Department of Justice'}),
+        calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1), page = 'dashboard', searchText = '', statusFilter = 'All', typeFilter = 'All', selectedCase = null, pendingImages = [];
 
     let auth = null, db = null, currentStaff = null, cloudReady = false, cloudUnsubscribe = null, saveQueue = Promise.resolve();
     const firebaseConfigured = firebaseConfig.apiKey !== 'PASTE_API_KEY_HERE' && firebaseConfig.projectId !== 'PASTE_PROJECT_ID_HERE' && firebaseConfig.appId !== 'PASTE_APP_ID_HERE';
 
     function load(k, fallback) { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch (e) { return fallback; } }
-    function cacheLocally() { localStorage.setItem(KEY, JSON.stringify(cases)); localStorage.setItem(LOGKEY, JSON.stringify(logs)); localStorage.setItem(RETAINERKEY, JSON.stringify(retainers)); localStorage.setItem(BUSINESSKEY, JSON.stringify(businesses)); localStorage.setItem(STAFFKEY, JSON.stringify(staffMembers)); localStorage.setItem(WARRANTKEY, JSON.stringify(warrants)); localStorage.setItem(PROFILE, JSON.stringify(profile)); }
+    function cacheLocally() { localStorage.setItem(KEY, JSON.stringify(cases)); localStorage.setItem(LOGKEY, JSON.stringify(logs)); localStorage.setItem(RETAINERKEY, JSON.stringify(retainers)); localStorage.setItem(BUSINESSKEY, JSON.stringify(businesses)); localStorage.setItem(STAFFKEY, JSON.stringify(staffMembers)); localStorage.setItem(WARRANTKEY, JSON.stringify(warrants)); localStorage.setItem(CALENDARKEY, JSON.stringify(calendarEvents)); localStorage.setItem(PROFILE, JSON.stringify(profile)); }
     function setAuthMessage(message, error=false) { const el=document.getElementById('authmessage'); if(el){el.textContent=message;el.style.color=error?'#ef7777':'#e9b45d';} }
     function setCloudStatus(message, error=false) { const el=document.getElementById('cloudstatus'); if(el){el.textContent=message;el.style.color=error?'#ef7777':'#58c69b';} }
 
@@ -1082,7 +1086,7 @@
       cacheLocally();
       if (!currentStaff || !db || !cloudReady) return;
       // Queue writes so rapid actions are not silently dropped while another save is in flight.
-      saveQueue = saveQueue.then(() => stateRef().set({cases, logs, retainers, businesses, staffMembers, warrants, profile, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentStaff.email || currentStaff.uid}, {merge:true}))
+      saveQueue = saveQueue.then(() => stateRef().set({cases, logs, retainers, businesses, staffMembers, warrants, calendarEvents, profile, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentStaff.email || currentStaff.uid}, {merge:true}))
         .then(()=>setCloudStatus('☁ Synced'))
         .catch(err=>{console.error(err);setCloudStatus('Cloud save failed',true);toast('Cloud save failed. Check Firebase rules and connection.');});
     }
@@ -1140,11 +1144,12 @@
               businesses=Array.isArray(data.businesses)?data.businesses:[];
               staffMembers=Array.isArray(data.staffMembers)?data.staffMembers:[];
               warrants=Array.isArray(data.warrants)?data.warrants:[];
+              calendarEvents=Array.isArray(data.calendarEvents)?data.calendarEvents:[];
               profile=data.profile && typeof data.profile==='object'?data.profile:{name:user.displayName||user.email||'DOJ Staff',rank:'Department of Justice'};
               cacheLocally(); cloudReady=true; setCloudStatus('☁ Synced'); render();
             } else {
               // First signed-in staff member seeds the shared document from this browser's existing local data.
-              const legacy={cases:load(KEY,[]),logs:load(LOGKEY,[]),retainers:load(RETAINERKEY,[]),businesses:load(BUSINESSKEY,[]),staffMembers:load(STAFFKEY,[]),warrants:load(WARRANTKEY,[]),profile:load(PROFILE,{name:user.displayName||user.email||'DOJ Staff',rank:'Department of Justice'})};
+              const legacy={cases:load(KEY,[]),logs:load(LOGKEY,[]),retainers:load(RETAINERKEY,[]),businesses:load(BUSINESSKEY,[]),staffMembers:load(STAFFKEY,[]),warrants:load(WARRANTKEY,[]),calendarEvents:load(CALENDARKEY,[]),profile:load(PROFILE,{name:user.displayName||user.email||'DOJ Staff',rank:'Department of Justice'})};
               try { await stateRef().set({...legacy,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:user.email||user.uid}); }
               catch(createErr) { if(createErr.code!=='already-exists') throw createErr; }
             }
@@ -1212,6 +1217,7 @@
       if (page === 'dashboard') root.innerHTML = dashboard();
       else if (page === 'cases') root.innerHTML = casesPage();
       else if (page === 'warrants') root.innerHTML = warrantsPage();
+      else if (page === 'calendar') root.innerHTML = calendarPage();
       else if (page === 'retainers') root.innerHTML = retainersPage();
       else if (page === 'businesses') root.innerHTML = businessesPage();
       else if (page === 'staff') root.innerHTML = staffPage();
@@ -1221,6 +1227,21 @@
       else root.innerHTML = settingsPage();
     }
 
+
+    // Supports multiple document/image URLs while keeping older single-URL records working.
+    function getDocumentUrls(record) {
+      const values = Array.isArray(record?.documentUrls) ? record.documentUrls : [];
+      if (!values.length && record?.documentUrl) values.push(record.documentUrl);
+      return [...new Set(values.map(v=>String(v||'').trim()).filter(v=>/^https?:\/\//i.test(v)))];
+    }
+    function parseDocumentUrls(value) {
+      return [...new Set(String(value||'').split(/[\n,;]+/).map(v=>v.trim()).filter(v=>/^https?:\/\//i.test(v)))];
+    }
+    function documentGalleryMarkup(record, label) {
+      const urls=getDocumentUrls(record);
+      if (!urls.length) return '';
+      return `<div class="field span2"><label>${esc(label)} (${urls.length})</label><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:8px">${urls.map((url,i)=>`<div style="border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0"><a href="${esc(url)}" target="_blank" rel="noopener" style="display:block;overflow-wrap:anywhere;margin-bottom:8px">Open image/document ${i+1} ↗</a><a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt="${esc(label)} ${i+1}" loading="lazy" style="display:block;width:100%;max-height:260px;object-fit:contain;border-radius:6px" onerror="this.style.display='none'"></a></div>`).join('')}</div></div>`;
+    }
 
     function retainersPage() {
       const active = retainers.filter(r => r.status === 'Active').length;
@@ -1250,7 +1271,7 @@
         <div class="field"><label>STATUS</label><select name="status">${['Active','Pending Signature','Paused','Expired','Terminated'].map(x=>`<option ${r.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
         <div class="field"><label>START DATE</label><input type="date" name="startDate" value="${esc(r.startDate)}"></div>
         <div class="field"><label>RENEWAL / END DATE</label><input type="date" name="renewalDate" value="${esc(r.renewalDate)}"></div>
-        <div class="field span2"><label>AGREEMENT IMAGE LINK</label><input type="url" name="documentUrl" value="${esc(r.documentUrl)}" placeholder="https://... (direct image link)"><small class="muted">Paste a direct link to the agreement image (for example, a hosted JPG or PNG) that authorised DOJ staff can access.</small></div>
+        <div class="field span2"><label>AGREEMENT IMAGES / DOCUMENT LINKS</label><textarea name="documentUrls" rows="3" placeholder="Paste one image/document URL per line">${esc(getDocumentUrls(r).join('\n'))}</textarea><small class="muted">Add multiple links, one per line. You can include all pages of the signed agreement. Use direct image links or shareable document links accessible to DOJ staff.</small></div>
         <div class="field span2"><label>TERMS / SERVICES INCLUDED</label><textarea name="terms" maxlength="12000" placeholder="Scope of services, payment terms, responsibilities, cancellation terms…">${esc(r.terms)}</textarea></div>
         <div class="field span2"><label>INTERNAL NOTES</label><textarea name="notes" maxlength="6000" placeholder="Payment tracking, reminders, internal notes…">${esc(r.notes)}</textarea></div>
         </div></div><div class="formfoot"><button type="button" class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" type="submit">Save agreement</button></div></form></section></div>`;
@@ -1259,14 +1280,14 @@
 
     function saveRetainer(e) {
       e.preventDefault(); const f=new FormData(e.target), idv=f.get('id'), old=retainers.find(x=>x.id===idv);
-      const r={...(old||{}),id:idv,title:f.get('title').trim(),client:f.get('client').trim(),contact:f.get('contact').trim(),fee:f.get('fee').trim(),currency:f.get('currency'),frequency:f.get('frequency'),status:f.get('status'),startDate:f.get('startDate'),renewalDate:f.get('renewalDate'),documentUrl:f.get('documentUrl').trim(),terms:f.get('terms').trim(),notes:f.get('notes').trim(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),updatedBy:currentStaff?.email||profile.name};
+      const r={...(old||{}),id:idv,title:f.get('title').trim(),client:f.get('client').trim(),contact:f.get('contact').trim(),fee:f.get('fee').trim(),currency:f.get('currency'),frequency:f.get('frequency'),status:f.get('status'),startDate:f.get('startDate'),renewalDate:f.get('renewalDate'),documentUrls:parseDocumentUrls(f.get('documentUrls')),documentUrl:parseDocumentUrls(f.get('documentUrls'))[0]||'',terms:f.get('terms').trim(),notes:f.get('notes').trim(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),updatedBy:currentStaff?.email||profile.name};
       if(old) retainers=retainers.map(x=>x.id===idv?r:x); else retainers.unshift(r);
       save(); log(old?'Updated retainer agreement':'Added retainer agreement',idv,r.client+' — '+r.title); closeModal(); render(); toast('Retainer agreement saved.');
     }
 
     function viewRetainer(retainerId) {
       const r=retainers.find(x=>x.id===retainerId); if(!r)return;
-      document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">RETAINER AGREEMENT</div><h2>${esc(r.title)}</h2><div class="muted">${esc(r.id)} · ${esc(r.status)}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="formgrid"><div class="field"><label>CLIENT / BUSINESS</label><p>${esc(r.client)}</p></div><div class="field"><label>CONTACT</label><p>${esc(r.contact||'—')}</p></div><div class="field"><label>FEE</label><p>${esc(r.currency||'R')} ${esc(r.fee)} / ${esc(r.frequency||'')}</p></div><div class="field"><label>DATES</label><p>${esc(r.startDate||'—')} to ${esc(r.renewalDate||'No end date')}</p></div><div class="field span2"><label>TERMS / SERVICES</label><p style="white-space:pre-wrap">${esc(r.terms||'No terms entered.')}</p></div><div class="field span2"><label>INTERNAL NOTES</label><p style="white-space:pre-wrap">${esc(r.notes||'No notes.')}</p></div>${r.documentUrl?`<div class="field span2"><label>AGREEMENT IMAGE</label><p><a href="${esc(r.documentUrl)}" target="_blank" rel="noopener">Open full image ↗</a></p><a href="${esc(r.documentUrl)}" target="_blank" rel="noopener"><img src="${esc(r.documentUrl)}" alt="Retainer agreement image" style="display:block;max-width:100%;max-height:420px;object-fit:contain;border:1px solid var(--line);border-radius:10px;margin-top:10px" onerror="this.style.display='none'"></a></div>`:''}</div></div><div class="formfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openRetainerForm('${r.id}')">Edit agreement</button></div></section></div>`;
+      document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">RETAINER AGREEMENT</div><h2>${esc(r.title)}</h2><div class="muted">${esc(r.id)} · ${esc(r.status)}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="formgrid"><div class="field"><label>CLIENT / BUSINESS</label><p>${esc(r.client)}</p></div><div class="field"><label>CONTACT</label><p>${esc(r.contact||'—')}</p></div><div class="field"><label>FEE</label><p>${esc(r.currency||'R')} ${esc(r.fee)} / ${esc(r.frequency||'')}</p></div><div class="field"><label>DATES</label><p>${esc(r.startDate||'—')} to ${esc(r.renewalDate||'No end date')}</p></div><div class="field span2"><label>TERMS / SERVICES</label><p style="white-space:pre-wrap">${esc(r.terms||'No terms entered.')}</p></div><div class="field span2"><label>INTERNAL NOTES</label><p style="white-space:pre-wrap">${esc(r.notes||'No notes.')}</p></div>${documentGalleryMarkup(r,'AGREEMENT IMAGES / DOCUMENTS')}</div></div><div class="formfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openRetainerForm('${r.id}')">Edit agreement</button></div></section></div>`;
     }
 
     function deleteRetainer(retainerId) {
@@ -1308,7 +1329,7 @@
         <div class="field"><label>REGISTRATION DATE</label><input type="date" name="registeredDate" value="${esc(b.registeredDate)}"></div>
         <div class="field"><label>RENEWAL / EXPIRY DATE</label><input type="date" name="renewalDate" value="${esc(b.renewalDate)}"></div>
         <div class="field span2"><label>BUSINESS DESCRIPTION / ACTIVITIES</label><textarea name="description" maxlength="6000" placeholder="Describe what the business does and its services…">${esc(b.description)}</textarea></div>
-        <div class="field span2"><label>REGISTRATION IMAGE LINK</label><input type="url" name="documentUrl" value="${esc(b.documentUrl)}" placeholder="https://... (direct image link)"><small class="muted">Paste a direct link to an image of the registration document (JPG or PNG) that authorised DOJ staff can access.</small></div>
+        <div class="field span2"><label>REGISTRATION IMAGES / DOCUMENT LINKS</label><textarea name="documentUrls" rows="3" placeholder="Paste one image/document URL per line">${esc(getDocumentUrls(b).join('\n'))}</textarea><small class="muted">Add multiple links, one per line, for example the registration certificate, owner ID and supporting documents. Links must be accessible to authorised DOJ staff.</small></div>
         <div class="field span2"><label>INTERNAL NOTES</label><textarea name="notes" maxlength="6000" placeholder="Payment confirmation, compliance notes, review decision…">${esc(b.notes)}</textarea></div>
         </div></div><div class="formfoot"><button type="button" class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" type="submit">Save business record</button></div></form></section></div>`;
       document.getElementById('businessForm').onsubmit = saveBusiness;
@@ -1316,14 +1337,14 @@
 
     function saveBusiness(e) {
       e.preventDefault(); const f=new FormData(e.target), idv=f.get('id'), old=businesses.find(x=>x.id===idv);
-      const b={...(old||{}),id:idv,name:f.get('name').trim(),owner:f.get('owner').trim(),contact:f.get('contact').trim(),type:f.get('type'),registrationNo:f.get('registrationNo').trim(),fee:f.get('fee').trim(),currency:f.get('currency'),feeFrequency:f.get('feeFrequency'),status:f.get('status'),applicationDate:f.get('applicationDate'),registeredDate:f.get('registeredDate'),renewalDate:f.get('renewalDate'),description:f.get('description').trim(),documentUrl:f.get('documentUrl').trim(),notes:f.get('notes').trim(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),updatedBy:currentStaff?.email||profile.name};
+      const b={...(old||{}),id:idv,name:f.get('name').trim(),owner:f.get('owner').trim(),contact:f.get('contact').trim(),type:f.get('type'),registrationNo:f.get('registrationNo').trim(),fee:f.get('fee').trim(),currency:f.get('currency'),feeFrequency:f.get('feeFrequency'),status:f.get('status'),applicationDate:f.get('applicationDate'),registeredDate:f.get('registeredDate'),renewalDate:f.get('renewalDate'),description:f.get('description').trim(),documentUrls:parseDocumentUrls(f.get('documentUrls')),documentUrl:parseDocumentUrls(f.get('documentUrls'))[0]||'',notes:f.get('notes').trim(),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),updatedBy:currentStaff?.email||profile.name};
       if(old) businesses=businesses.map(x=>x.id===idv?b:x); else businesses.unshift(b);
       save(); log(old?'Updated business registration':'Added business registration',idv,b.name+' — '+b.owner); closeModal(); render(); toast('Business registration saved.');
     }
 
     function viewBusiness(businessId) {
       const b=businesses.find(x=>x.id===businessId); if(!b)return;
-      document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">BUSINESS REGISTRATION</div><h2>${esc(b.name)}</h2><div class="muted">${esc(b.registrationNo||b.id)} · ${esc(b.status)}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="formgrid"><div class="field"><label>OWNER / REPRESENTATIVE</label><p>${esc(b.owner)}</p></div><div class="field"><label>CONTACT</label><p>${esc(b.contact||'—')}</p></div><div class="field"><label>BUSINESS TYPE</label><p>${esc(b.type||'Other')}</p></div><div class="field"><label>REGISTRATION FEE</label><p>${esc(b.currency||'R')} ${esc(b.fee)} · ${esc(b.feeFrequency||'')}</p></div><div class="field"><label>APPLICATION DATE</label><p>${esc(b.applicationDate||'—')}</p></div><div class="field"><label>REGISTERED DATE</label><p>${esc(b.registeredDate||'—')}</p></div><div class="field"><label>RENEWAL / EXPIRY</label><p>${esc(b.renewalDate||'—')}</p></div><div class="field span2"><label>BUSINESS DESCRIPTION</label><p style="white-space:pre-wrap">${esc(b.description||'No description entered.')}</p></div><div class="field span2"><label>INTERNAL NOTES</label><p style="white-space:pre-wrap">${esc(b.notes||'No notes.')}</p></div>${b.documentUrl?`<div class="field span2"><label>REGISTRATION IMAGE</label><p><a href="${esc(b.documentUrl)}" target="_blank" rel="noopener">Open full image ↗</a></p><a href="${esc(b.documentUrl)}" target="_blank" rel="noopener"><img src="${esc(b.documentUrl)}" alt="Business registration image" style="display:block;max-width:100%;max-height:420px;object-fit:contain;border:1px solid var(--line);border-radius:10px;margin-top:10px" onerror="this.style.display='none'"></a></div>`:''}</div></div><div class="formfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openBusinessForm('${b.id}')">Edit business</button></div></section></div>`;
+      document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">BUSINESS REGISTRATION</div><h2>${esc(b.name)}</h2><div class="muted">${esc(b.registrationNo||b.id)} · ${esc(b.status)}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="formgrid"><div class="field"><label>OWNER / REPRESENTATIVE</label><p>${esc(b.owner)}</p></div><div class="field"><label>CONTACT</label><p>${esc(b.contact||'—')}</p></div><div class="field"><label>BUSINESS TYPE</label><p>${esc(b.type||'Other')}</p></div><div class="field"><label>REGISTRATION FEE</label><p>${esc(b.currency||'R')} ${esc(b.fee)} · ${esc(b.feeFrequency||'')}</p></div><div class="field"><label>APPLICATION DATE</label><p>${esc(b.applicationDate||'—')}</p></div><div class="field"><label>REGISTERED DATE</label><p>${esc(b.registeredDate||'—')}</p></div><div class="field"><label>RENEWAL / EXPIRY</label><p>${esc(b.renewalDate||'—')}</p></div><div class="field span2"><label>BUSINESS DESCRIPTION</label><p style="white-space:pre-wrap">${esc(b.description||'No description entered.')}</p></div><div class="field span2"><label>INTERNAL NOTES</label><p style="white-space:pre-wrap">${esc(b.notes||'No notes.')}</p></div>${documentGalleryMarkup(b,'REGISTRATION IMAGES / DOCUMENTS')}</div></div><div class="formfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openBusinessForm('${b.id}')">Edit business</button></div></section></div>`;
     }
 
     function deleteBusiness(businessId) {
@@ -1409,7 +1430,7 @@
         <div class="field"><label>STATUS</label><select name="status">${WARRANT_STATUSES.map(x=>`<option ${w.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
         <div class="field span2"><label>GROUNDS / REASON *</label><textarea name="grounds" required rows="3" maxlength="3000" placeholder="Summarise the grounds supporting this warrant">${esc(w.grounds)}</textarea></div>
         <div class="field span2"><label>CONDITIONS / SCOPE</label><textarea name="conditions" rows="2" maxlength="2000" placeholder="Scope, restrictions or conditions">${esc(w.conditions)}</textarea></div>
-        <div class="field span2"><label>IMAGE / DOCUMENT LINK (OPTIONAL)</label><input type="url" name="documentUrl" value="${esc(w.documentUrl)}" placeholder="https://... direct image or document link"><small class="muted">Paste a shareable link to the warrant image/document.</small></div>
+        <div class="field span2"><label>WARRANT IMAGES / DOCUMENT LINKS (OPTIONAL)</label><textarea name="documentUrls" rows="3" placeholder="Paste one image/document URL per line">${esc(getDocumentUrls(w).join('\n'))}</textarea><small class="muted">Add multiple links, one per line, for all pages of the warrant and supporting documents.</small></div>
         <div class="field span2"><label>INTERNAL NOTES</label><textarea name="notes" rows="2" maxlength="2000">${esc(w.notes)}</textarea></div>
         </div></div><div class="formfoot"><button type="button" class="btn" onclick="closeModal()">Cancel</button><button type="submit" class="btn primary">${warrantId?'Save changes':'Save warrant'}</button></div></form></section></div>`;
       document.getElementById('warrantForm').onsubmit = saveWarrant;
@@ -1418,7 +1439,7 @@
     function saveWarrant(e) {
       e.preventDefault(); const f=new FormData(e.target); const idv=String(f.get('id')||'');
       const existing=warrants.find(x=>x.id===idv);
-      const item={id:idv,number:String(f.get('number')||'').trim(),type:String(f.get('type')||''),subject:String(f.get('subject')||'').trim(),issuedDate:String(f.get('issuedDate')||''),expiryDate:String(f.get('expiryDate')||''),requestingOfficer:String(f.get('requestingOfficer')||'').trim(),authorisedBy:String(f.get('authorisedBy')||'').trim(),status:String(f.get('status')||'Active'),grounds:String(f.get('grounds')||'').trim(),conditions:String(f.get('conditions')||'').trim(),documentUrl:String(f.get('documentUrl')||'').trim(),notes:String(f.get('notes')||'').trim(),createdAt:existing?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+      const item={id:idv,number:String(f.get('number')||'').trim(),type:String(f.get('type')||''),subject:String(f.get('subject')||'').trim(),issuedDate:String(f.get('issuedDate')||''),expiryDate:String(f.get('expiryDate')||''),requestingOfficer:String(f.get('requestingOfficer')||'').trim(),authorisedBy:String(f.get('authorisedBy')||'').trim(),status:String(f.get('status')||'Active'),grounds:String(f.get('grounds')||'').trim(),conditions:String(f.get('conditions')||'').trim(),documentUrls:parseDocumentUrls(f.get('documentUrls')),documentUrl:parseDocumentUrls(f.get('documentUrls'))[0]||'',notes:String(f.get('notes')||'').trim(),createdAt:existing?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
       if(existing) warrants=warrants.map(x=>x.id===idv?item:x); else warrants.unshift(item);
       save(); log(existing?'Updated warrant':'Recorded warrant',item.number,item.subject+' — '+item.type); closeModal(); render(); toast(existing?'Warrant updated.':'Warrant recorded.');
     }
@@ -1426,7 +1447,7 @@
     function viewWarrant(warrantId) {
       const w=warrants.find(x=>x.id===warrantId); if(!w)return;
       const detail=(label,value)=>`<div class="detailbox"><small>${label}</small><p>${esc(value||'—')}</p></div>`;
-      document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">WARRANT RECORD</div><h2>${esc(w.number)}</h2><div class="muted">${esc(w.type)} · ${esc(w.status)}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="detailgrid">${detail('Subject',w.subject)}${detail('Issued date',w.issuedDate)}${detail('Expiry date',w.expiryDate)}${detail('Requesting officer',w.requestingOfficer)}${detail('Authorised by',w.authorisedBy)}${detail('Status',w.status)}${detail('Grounds / reason',w.grounds)}${detail('Conditions / scope',w.conditions)}${detail('Internal notes',w.notes)}</div>${w.documentUrl?`<p style="margin-top:16px"><a class="btn" href="${esc(w.documentUrl)}" target="_blank" rel="noopener">Open warrant image / document ↗</a></p>`:''}</div><div class="formfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openWarrantForm('${w.id}')">Edit warrant</button></div></section></div>`;
+      document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">WARRANT RECORD</div><h2>${esc(w.number)}</h2><div class="muted">${esc(w.type)} · ${esc(w.status)}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="detailgrid">${detail('Subject',w.subject)}${detail('Issued date',w.issuedDate)}${detail('Expiry date',w.expiryDate)}${detail('Requesting officer',w.requestingOfficer)}${detail('Authorised by',w.authorisedBy)}${detail('Status',w.status)}${detail('Grounds / reason',w.grounds)}${detail('Conditions / scope',w.conditions)}${detail('Internal notes',w.notes)}</div>${documentGalleryMarkup(w,'WARRANT IMAGES / DOCUMENTS')}</div><div class="formfoot"><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openWarrantForm('${w.id}')">Edit warrant</button></div></section></div>`;
     }
 
     function deleteWarrant(warrantId) {
@@ -1434,6 +1455,42 @@
       if(!confirm(`Delete warrant ${w.number} for ${w.subject}?`))return;
       warrants=warrants.filter(x=>x.id!==warrantId); save(); log('Deleted warrant',w.number,w.subject); render(); toast('Warrant deleted.');
     }
+
+    const CALENDAR_TYPES = ['Court Hearing','Case Conference','Deadline','Client Meeting','Internal Meeting','Other'];
+    const CALENDAR_STATUSES = ['Scheduled','Completed','Cancelled','Postponed'];
+    function localISO(d) { const x=new Date(d); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; }
+    function calendarPage() {
+      const today=localISO(new Date()), y=calendarMonth.getFullYear(), m=calendarMonth.getMonth();
+      const first=new Date(y,m,1), start=new Date(y,m,1-first.getDay()), days=[];
+      for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);days.push(d);}
+      const monthEvents=calendarEvents.filter(e=>String(e.date||'').startsWith(`${y}-${String(m+1).padStart(2,'0')}`)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+      const upcoming=calendarEvents.filter(e=>e.date>=today && e.status!=='Cancelled' && e.status!=='Completed').sort((a,b)=>(a.date+' '+(a.time||'')).localeCompare(b.date+' '+(b.time||''))).slice(0,8);
+      const monthName=calendarMonth.toLocaleDateString('en-ZA',{month:'long',year:'numeric'});
+      return `${head('LEGAL OPERATIONS','Court calendar & hearings','Schedule court appearances, conferences, legal deadlines and internal meetings.',`<button class="btn primary" onclick="openCalendarForm()">＋ Add event</button>`)}
+        <div class="stats">${stat('Total events','All scheduled records',calendarEvents.length,'▦')}${stat('Upcoming','Not completed or cancelled',upcoming.length,'◷')}${stat('Court hearings','All hearing records',calendarEvents.filter(e=>e.type==='Court Hearing'&&e.status!=='Cancelled').length,'⚖')}</div>
+        <div class="calendar-layout" style="display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,1fr);gap:18px;margin-top:18px;align-items:start">
+          <section class="panel"><div class="panelhead" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><h2>Calendar</h2><p>Choose an event to view or edit its details.</p></div><div style="display:flex;align-items:center;gap:8px"><button class="btn small" onclick="changeCalendarMonth(-1)" aria-label="Previous month">←</button><b>${esc(monthName)}</b><button class="btn small" onclick="changeCalendarMonth(1)" aria-label="Next month">→</button><button class="btn small" onclick="calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);render()">Today</button></div></div>
+          <div class="calendar-grid" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div style="text-align:center;padding:8px 0;color:var(--muted);font-size:11px;font-weight:700">${d}</div>`).join('')}${days.map(d=>{const iso=localISO(d), items=calendarEvents.filter(e=>e.date===iso&&e.status!=='Cancelled');return `<div style="min-height:90px;padding:7px 5px;border:1px solid ${iso===today?'var(--accent,#c0c0c0)':'var(--border,#30343a)'};border-radius:9px;background:${d.getMonth()===m?'var(--panel2,rgba(255,255,255,.025))':'transparent'};opacity:${d.getMonth()===m?'1':'.48'}"><div style="font-size:12px;font-weight:${iso===today?'800':'600'};margin-bottom:5px">${d.getDate()}${iso===today?' · Today':''}</div>${items.slice(0,2).map(e=>`<button title="${esc(e.title)}" onclick="viewCalendarEvent('${e.id}')" style="display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;border:0;border-radius:4px;padding:4px;margin:3px 0;font-size:10px;background:${e.type==='Court Hearing'?'rgba(192,192,192,.2)':e.type==='Deadline'?'rgba(231,166,74,.16)':'rgba(90,150,190,.16)'};color:inherit;cursor:pointer">${esc(e.time||'All day')} ${esc(e.title)}</button>`).join('')}${items.length>2?`<small style="font-size:9px;color:var(--muted)">+${items.length-2} more</small>`:''}</div>`}).join('')}</div><p class="muted" style="font-size:11px;margin-top:12px">Calendar dates use your device's local date. Cancelled events are hidden from the month grid.</p></section>
+          <section class="panel"><div class="panelhead"><div><h2>Upcoming schedule</h2><p>Next scheduled events and deadlines.</p></div></div>${upcoming.length?`<div style="display:grid;gap:10px">${upcoming.map(e=>`<button class="eventrow" onclick="viewCalendarEvent('${e.id}')" style="display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;padding:12px;border:1px solid var(--border,#30343a);border-radius:10px;background:transparent;color:inherit;cursor:pointer"><div style="min-width:54px;text-align:center;border:1px solid var(--border,#30343a);border-radius:8px;padding:7px 4px"><b style="display:block;font-size:18px">${new Date(e.date+'T12:00:00').getDate()}</b><small>${new Date(e.date+'T12:00:00').toLocaleDateString('en-ZA',{month:'short'})}</small></div><div style="min-width:0;flex:1"><b>${esc(e.title)}</b><div class="muted" style="font-size:11px;margin-top:3px">${esc(e.type)} · ${esc(e.time||'Time not set')}</div><div class="muted" style="font-size:11px;margin-top:3px">${esc(e.location||'Location not set')}</div>${e.caseId?`<div class="muted" style="font-size:10px">Case: ${esc(e.caseId)}</div>`:''}</div></button>`).join('')}</div>`:`<div class="empty"><b>No upcoming events</b>Add a hearing, meeting or deadline to get started.</div>`}</section></div>`;
+    }
+    function changeCalendarMonth(delta){calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+delta,1);render();}
+    function openCalendarForm(eventId=null, presetDate='') {
+      const existing=calendarEvents.find(e=>e.id===eventId);
+      const e=existing||{id:'CAL-'+new Date().getFullYear()+'-'+Math.random().toString(36).slice(2,7).toUpperCase(),title:'',type:'Court Hearing',date:presetDate||localISO(new Date()),time:'',endTime:'',caseId:'',location:'',presidingOfficial:'',assignedStaff:'',participants:'',status:'Scheduled',description:'',outcome:'',nextDate:''};
+      document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">COURT SCHEDULING</div><h2>${eventId?'Edit calendar event':'Add calendar event'}</h2><div class="muted" style="font-size:11px">Reference: ${esc(e.id)}</div></div><button class="close" onclick="closeModal()">✕</button></div><form id="calendarForm"><div class="formbody"><input type="hidden" name="id" value="${esc(e.id)}"><div class="formgrid">
+      <div class="field span2"><label>EVENT TITLE *</label><input name="title" required maxlength="180" value="${esc(e.title)}" placeholder="e.g. State v. Example — Initial Hearing"></div>
+      <div class="field"><label>EVENT TYPE *</label><select name="type">${CALENDAR_TYPES.map(x=>`<option ${e.type===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label>STATUS</label><select name="status">${CALENDAR_STATUSES.map(x=>`<option ${e.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="field"><label>DATE *</label><input type="date" name="date" required value="${esc(e.date)}"></div><div class="field"><label>START TIME</label><input type="time" name="time" value="${esc(e.time)}"></div><div class="field"><label>END TIME</label><input type="time" name="endTime" value="${esc(e.endTime)}"></div>
+      <div class="field span2"><label>LINK TO CASE FILE</label><select name="caseId"><option value="">No linked case</option>${cases.map(c=>`<option value="${esc(c.id)}" ${e.caseId===c.id?'selected':''}>${esc(c.id)} — ${esc(c.title)}</option>`).join('')}</select></div>
+      <div class="field"><label>COURTROOM / LOCATION</label><input name="location" maxlength="180" value="${esc(e.location)}" placeholder="Courtroom or meeting location"></div><div class="field"><label>PRESIDING OFFICIAL</label><input name="presidingOfficial" maxlength="140" value="${esc(e.presidingOfficial)}"></div>
+      <div class="field span2"><label>ASSIGNED DOJ STAFF</label><input name="assignedStaff" maxlength="240" value="${esc(e.assignedStaff)}" placeholder="Lawyer, prosecutor or staff member"></div><div class="field span2"><label>PARTICIPANTS</label><input name="participants" maxlength="500" value="${esc(e.participants)}" placeholder="Parties, representatives, witnesses"></div>
+      <div class="field span2"><label>NOTES / AGENDA</label><textarea name="description" rows="3" maxlength="3000" placeholder="Purpose, preparation notes or required documents">${esc(e.description)}</textarea></div><div class="field span2"><label>OUTCOME / MINUTES</label><textarea name="outcome" rows="2" maxlength="3000" placeholder="Record after the hearing or meeting">${esc(e.outcome)}</textarea></div><div class="field"><label>NEXT HEARING / FOLLOW-UP DATE</label><input type="date" name="nextDate" value="${esc(e.nextDate)}"></div>
+      </div></div><div class="formfoot"><button type="button" class="btn" onclick="closeModal()">Cancel</button><button type="submit" class="btn primary">${eventId?'Save changes':'Save event'}</button></div></form></section></div>`;
+      document.getElementById('calendarForm').onsubmit=saveCalendarEvent;
+    }
+    function saveCalendarEvent(ev){ev.preventDefault();const f=new FormData(ev.target),idv=String(f.get('id')||''),old=calendarEvents.find(x=>x.id===idv);const item={id:idv,title:String(f.get('title')||'').trim(),type:String(f.get('type')||'Other'),date:String(f.get('date')||''),time:String(f.get('time')||''),endTime:String(f.get('endTime')||''),caseId:String(f.get('caseId')||''),location:String(f.get('location')||'').trim(),presidingOfficial:String(f.get('presidingOfficial')||'').trim(),assignedStaff:String(f.get('assignedStaff')||'').trim(),participants:String(f.get('participants')||'').trim(),status:String(f.get('status')||'Scheduled'),description:String(f.get('description')||'').trim(),outcome:String(f.get('outcome')||'').trim(),nextDate:String(f.get('nextDate')||''),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(old)calendarEvents=calendarEvents.map(x=>x.id===idv?item:x);else calendarEvents.unshift(item);save();log(old?'Updated calendar event':'Added calendar event',item.id,item.title+' · '+item.date);closeModal();render();toast(old?'Calendar event updated.':'Calendar event saved.');}
+    function viewCalendarEvent(eventId){const e=calendarEvents.find(x=>x.id===eventId);if(!e)return;const c=cases.find(x=>x.id===e.caseId);const detail=(label,value)=>`<div class="detailbox"><small>${label}</small><p>${esc(value||'—')}</p></div>`;document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">CALENDAR EVENT · ${esc(e.status)}</div><h2>${esc(e.title)}</h2><div class="muted">${esc(e.type)} · ${date(e.date)}${e.time?' · '+esc(e.time):''}${e.endTime?'–'+esc(e.endTime):''}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="detailgrid">${detail('Linked case',c?c.id+' — '+c.title:e.caseId)}${detail('Location',e.location)}${detail('Presiding official',e.presidingOfficial)}${detail('Assigned staff',e.assignedStaff)}${detail('Participants',e.participants)}${detail('Next hearing / follow-up',e.nextDate?date(e.nextDate):'')}${detail('Notes / agenda',e.description)}${detail('Outcome / minutes',e.outcome)}</div></div><div class="formfoot"><button class="btn danger" onclick="deleteCalendarEvent('${e.id}')">Delete</button><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openCalendarForm('${e.id}')">Edit event</button></div></section></div>`;}
+    function deleteCalendarEvent(eventId){const e=calendarEvents.find(x=>x.id===eventId);if(!e)return;if(!confirm(`Delete calendar event "${e.title}"?`))return;calendarEvents=calendarEvents.filter(x=>x.id!==eventId);save();log('Deleted calendar event',e.id,e.title);closeModal();render();toast('Calendar event deleted.');}
 
     function casesPage() {
       return `

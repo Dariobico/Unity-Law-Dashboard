@@ -425,29 +425,18 @@
       border: 1px solid transparent;
     }
 
-    .status-open {
-      background: #18382e;
-      color: #7ee0b6;
-      border-color: #245343;
-    }
-
-    .status-review {
-      background: #3a301b;
-      color: #f0cb7c;
-      border-color: #594824;
-    }
-
-    .status-court {
-      background: #1c2e48;
-      color: #9bc6ff;
-      border-color: #2d4770;
-    }
-
-    .status-closed {
-      background: #292d33;
-      color: #b6bdc6;
-      border-color: #3c424b;
-    }
+    /* Consistent status colours across all DOJ registers */
+    .status-green { background:#153b2b; color:#75e0a8; border-color:#236746; }
+    .status-amber { background:#463719; color:#ffd166; border-color:#75591f; }
+    .status-red { background:#451f25; color:#ff9aa5; border-color:#77313b; }
+    .status-blue { background:#1c2e48; color:#9bc6ff; border-color:#2d4770; }
+    .status-purple { background:#352447; color:#d7b1ff; border-color:#5a3b78; }
+    .status-grey { background:#292d33; color:#b6bdc6; border-color:#3c424b; }
+    /* Backwards-compatible classes used by older case UI elements */
+    .status-open { background:#18382e; color:#7ee0b6; border-color:#245343; }
+    .status-review { background:#3a301b; color:#f0cb7c; border-color:#594824; }
+    .status-court { background:#1c2e48; color:#9bc6ff; border-color:#2d4770; }
+    .status-closed { background:#292d33; color:#b6bdc6; border-color:#3c424b; }
 
     .priority-high {
       color: #ff9a9a;
@@ -1174,7 +1163,18 @@
     function id() { return 'DOJ-'+new Date().getFullYear()+'-'+Math.random().toString(36).slice(2,7).toUpperCase(); }
     function log(action,caseId='',detail='') { logs.unshift({id:Date.now()+Math.random(),action,caseId,detail,by:currentStaff?.email||profile.name,at:now()}); logs=logs.slice(0,500); save(); }
     function toast(msg) { document.getElementById('toastroot').innerHTML=`<div class="toast">${esc(msg)}</div>`; setTimeout(()=>document.getElementById('toastroot').innerHTML='',2600); }
-    function statusTag(s) { let cl={'Open':'status-open','Under Review':'status-review','Court Scheduled':'status-court','Closed':'status-closed'}[s]||'status-closed';return `<span class="tag ${cl}">${esc(s)}</span>`; }
+    function statusTag(s, context='') {
+      const caseColours = {'Open':'status-blue','In Progress':'status-purple','Under Review':'status-purple','Court Scheduled':'status-blue','Won':'status-green','Lost':'status-grey','Dismissed':'status-grey','Closed':'status-grey'};
+      const businessColours = {'Registered':'status-green','Active':'status-green','Awaiting Payment':'status-amber','Pending Review':'status-blue','Suspended':'status-red','Cancelled':'status-grey','Rejected':'status-red','Expired':'status-grey'};
+      const retainerColours = {'Active':'status-green','Awaiting Payment':'status-amber','Pending Signature':'status-blue','Paused':'status-amber','Expired':'status-grey','Terminated':'status-red'};
+      const warrantColours = {'Active':'status-red','Executed':'status-green','Expired':'status-grey','Revoked':'status-grey'};
+      const calendarColours = {'Scheduled':'status-blue','Completed':'status-green','Postponed':'status-amber','Cancelled':'status-red'};
+      const staffColours = {'Active':'status-green','Suspended':'status-red','Inactive':'status-grey'};
+      const neutralColours = {'Attorney General':'status-purple','Deputy Attorney General':'status-purple','Lawyer':'status-blue','Associate':'status-grey'};
+      const maps = {case:caseColours,business:businessColours,retainer:retainerColours,warrant:warrantColours,calendar:calendarColours,staff:staffColours,rank:neutralColours};
+      const cl = (maps[context] && maps[context][s]) || caseColours[s] || businessColours[s] || retainerColours[s] || warrantColours[s] || calendarColours[s] || staffColours[s] || neutralColours[s] || 'status-grey';
+      return `<span class="tag ${cl}">${esc(s)}</span>`;
+    }
     function priority(s) { return `<span class="priority-${String(s).toLowerCase()}">● ${esc(s||'Medium')}</span>`; }
     function filtered() { return cases.filter(c=>(statusFilter==='All'||c.status===statusFilter)&&(typeFilter==='All'||c.type===typeFilter)&&JSON.stringify(c).toLowerCase().includes(searchText.toLowerCase())).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')); }
     function setPage(p) { page=p;document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.getElementById('crumb').textContent=p.replace(/-/g,' ').toUpperCase();document.getElementById('sidebar').classList.remove('open');render(); }
@@ -1197,7 +1197,7 @@
           <td><span class="caseid">${esc(c.id)}</span></td>
           <td><div class="casetitle">${esc(c.title)}</div><div class="muted">${esc(c.type)}</div></td>
           <td>${esc(c.subject || '—')}</td>
-          <td>${statusTag(c.status)}</td>
+          <td>${statusTag(c.status, 'case')}</td>
           <td>${priority(c.priority)}</td>
           <td>${esc(c.assigned || 'Unassigned')}</td>
           <td><button class="btn small" onclick="viewCase('${c.id}')">Open ↗</button></td>
@@ -1209,7 +1209,44 @@
       return `<div class="tablewrap"><table><thead><tr><th>Case number</th><th>Case file</th><th>Primary party</th><th>Status</th><th>Priority</th><th>Assigned to</th><th></th></tr></thead><tbody>${tableRows(list)}</tbody></table></div>`;
     }
 
+    function localTodayISO() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    }
+
+    // Automatically flag active business registrations and retainers when their expiry/renewal date has passed.
+    // This is checked whenever the portal renders, including after shared Firebase records load.
+    function applyExpiryStatuses() {
+      const today = localTodayISO();
+      let changed = false;
+      businesses = businesses.map(b => {
+        const shouldAwaitPayment = !!b.renewalDate && b.renewalDate < today && ['Registered','Active'].includes(b.status);
+        if (shouldAwaitPayment) {
+          changed = true;
+          return {...b, status:'Awaiting Payment', updatedAt:new Date().toISOString()};
+        }
+        return b;
+      });
+      retainers = retainers.map(r => {
+        const shouldAwaitPayment = !!r.renewalDate && r.renewalDate < today && r.status === 'Active';
+        if (shouldAwaitPayment) {
+          changed = true;
+          return {...r, status:'Awaiting Payment', updatedAt:new Date().toISOString()};
+        }
+        return r;
+      });
+      if (changed) {
+        cacheLocally();
+        if (typeof logs !== 'undefined') {
+          logs.unshift({id:'LOG-'+Date.now()+'-'+Math.random().toString(36).slice(2,6), action:'Expiry date passed — awaiting payment', details:'One or more business registrations or retainer agreements were automatically changed to Awaiting Payment.', user:currentStaff?.email||profile?.name||'System', timestamp:new Date().toISOString()});
+          logs = logs.slice(0,500);
+        }
+        save();
+      }
+    }
+
     function render() {
+      applyExpiryStatuses();
       const root = document.getElementById('content');
       document.getElementById('staffname').textContent = profile.name || 'DOJ Staff';
       document.getElementById('avatar').textContent = (profile.name || 'D').trim().charAt(0).toUpperCase();
@@ -1255,7 +1292,7 @@
         </div>
         <section class="panel" style="margin-top:18px">
           <div class="panelhead"><div><h2>Agreement register</h2><p>Store the agreement details, fee, dates and a link to an image of the signed agreement.</p></div></div>
-          ${!list.length ? `<div class="empty"><b>No retainer agreements yet</b>Add an agreement to start your register.</div>` : `<div class="tablewrap"><table><thead><tr><th>Agreement</th><th>Client / Business</th><th>Retainer fee</th><th>Start date</th><th>Renewal date</th><th>Status</th><th>Actions</th></tr></thead><tbody>${list.map(r=>`<tr><td><b>${esc(r.title)}</b><div class="muted">${esc(r.id)}</div></td><td>${esc(r.client)}</td><td>${esc(r.currency||'R')} ${esc(r.fee||'—')}<div class="muted">${esc(r.frequency||'')}</div></td><td>${esc(r.startDate||'—')}</td><td>${esc(r.renewalDate||'—')}</td><td>${statusTag(r.status||'Active')}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" onclick="viewRetainer('${r.id}')">View</button><button class="btn small" onclick="openRetainerForm('${r.id}')">Edit</button><button class="btn small danger" onclick="deleteRetainer('${r.id}')">Delete</button></div></td></tr>`).join('')}</tbody></table></div>`}
+          ${!list.length ? `<div class="empty"><b>No retainer agreements yet</b>Add an agreement to start your register.</div>` : `<div class="tablewrap"><table><thead><tr><th>Agreement</th><th>Client / Business</th><th>Retainer fee</th><th>Start date</th><th>Renewal date</th><th>Status</th><th>Actions</th></tr></thead><tbody>${list.map(r=>`<tr><td><b>${esc(r.title)}</b><div class="muted">${esc(r.id)}</div></td><td>${esc(r.client)}</td><td>${esc(r.currency||'R')} ${esc(r.fee||'—')}<div class="muted">${esc(r.frequency||'')}</div></td><td>${esc(r.startDate||'—')}</td><td>${esc(r.renewalDate||'—')}</td><td>${statusTag(r.status||'Active', 'retainer')}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" onclick="viewRetainer('${r.id}')">View</button><button class="btn small" onclick="openRetainerForm('${r.id}')">Edit</button><button class="btn small danger" onclick="deleteRetainer('${r.id}')">Delete</button></div></td></tr>`).join('')}</tbody></table></div>`}
         </section>`;
     }
 
@@ -1268,7 +1305,7 @@
         <div class="field"><label>RETAINER FEE *</label><input name="fee" required maxlength="40" value="${esc(r.fee)}" placeholder="e.g. 2500"></div>
         <div class="field"><label>CURRENCY</label><select name="currency">${['R','$','£','€'].map(x=>`<option ${r.currency===x?'selected':''}>${x}</option>`).join('')}</select></div>
         <div class="field"><label>BILLING FREQUENCY</label><select name="frequency">${['Weekly','Monthly','Fortnightly','Quarterly','Other'].map(x=>`<option ${r.frequency===x?'selected':''}>${x}</option>`).join('')}</select></div>
-        <div class="field"><label>STATUS</label><select name="status">${['Active','Pending Signature','Paused','Expired','Terminated'].map(x=>`<option ${r.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
+        <div class="field"><label>STATUS</label><select name="status">${['Active','Awaiting Payment','Pending Signature','Paused','Expired','Terminated'].map(x=>`<option ${r.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
         <div class="field"><label>START DATE</label><input type="date" name="startDate" value="${esc(r.startDate)}"></div>
         <div class="field"><label>RENEWAL / END DATE</label><input type="date" name="renewalDate" value="${esc(r.renewalDate)}"></div>
         <div class="field span2"><label>AGREEMENT IMAGES / DOCUMENT LINKS</label><textarea name="documentUrls" rows="3" placeholder="Paste one image/document URL per line">${esc(getDocumentUrls(r).join('\n'))}</textarea><small class="muted">Add multiple links, one per line. You can include all pages of the signed agreement. Use direct image links or shareable document links accessible to DOJ staff.</small></div>
@@ -1309,7 +1346,7 @@
         </div>
         <section class="panel" style="margin-top:18px">
           <div class="panelhead"><div><h2>Business register</h2><p>Keep each business application, owner details, registration fee and renewal information in one place.</p></div></div>
-          ${!list.length ? `<div class="empty"><b>No businesses registered yet</b>Select “Register a business” to add the first record.</div>` : `<div class="tablewrap"><table><thead><tr><th>Business</th><th>Owner / Representative</th><th>Business type</th><th>Registration fee</th><th>Registered date</th><th>Status</th><th>Actions</th></tr></thead><tbody>${list.map(b=>`<tr><td><b>${esc(b.name)}</b><div class="muted">${esc(b.registrationNo||b.id)}</div></td><td>${esc(b.owner)}<div class="muted">${esc(b.contact||'')}</div></td><td>${esc(b.type||'Other')}</td><td>${esc(b.currency||'R')} ${esc(b.fee||'—')}<div class="muted">${esc(b.feeFrequency||'')}</div></td><td>${esc(b.registeredDate||'—')}</td><td>${statusTag(b.status||'Pending Review')}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" onclick="viewBusiness('${b.id}')">View</button><button class="btn small" onclick="openBusinessForm('${b.id}')">Edit</button><button class="btn small danger" onclick="deleteBusiness('${b.id}')">Delete</button></div></td></tr>`).join('')}</tbody></table></div>`}
+          ${!list.length ? `<div class="empty"><b>No businesses registered yet</b>Select “Register a business” to add the first record.</div>` : `<div class="tablewrap"><table><thead><tr><th>Business</th><th>Owner / Representative</th><th>Business type</th><th>Registration fee</th><th>Registered date</th><th>Status</th><th>Actions</th></tr></thead><tbody>${list.map(b=>`<tr><td><b>${esc(b.name)}</b><div class="muted">${esc(b.registrationNo||b.id)}</div></td><td>${esc(b.owner)}<div class="muted">${esc(b.contact||'')}</div></td><td>${esc(b.type||'Other')}</td><td>${esc(b.currency||'R')} ${esc(b.fee||'—')}<div class="muted">${esc(b.feeFrequency||'')}</div></td><td>${esc(b.registeredDate||'—')}</td><td>${statusTag(b.status||'Pending Review', 'business')}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" onclick="viewBusiness('${b.id}')">View</button><button class="btn small" onclick="openBusinessForm('${b.id}')">Edit</button><button class="btn small danger" onclick="deleteBusiness('${b.id}')">Delete</button></div></td></tr>`).join('')}</tbody></table></div>`}
         </section>`;
     }
 
@@ -1413,7 +1450,7 @@
         </div>
         <section class="panel" style="margin-top:18px">
           <div class="panelhead"><div><h2>Warrant register</h2><p>Record the authority, subject, grounds, dates and an optional image/document link.</p></div></div>
-          ${!ordered.length ? `<div class="empty"><b>No warrants recorded</b>Select “Issue warrant” to add a warrant record.</div>` : `<div class="tablewrap"><table><thead><tr><th>Warrant no.</th><th>Type / Subject</th><th>Issued</th><th>Expiry</th><th>Authorised by</th><th>Status</th><th>Actions</th></tr></thead><tbody>${ordered.map(w=>`<tr><td><b>${esc(w.number)}</b></td><td>${esc(w.type)}<div class="muted">${esc(w.subject)}</div></td><td>${esc(w.issuedDate||'—')}</td><td>${esc(w.expiryDate||'—')}</td><td>${esc(w.authorisedBy||'—')}</td><td>${statusTag(w.status||'Active')}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" onclick="viewWarrant('${w.id}')">View</button><button class="btn small" onclick="openWarrantForm('${w.id}')">Edit</button><button class="btn small danger" onclick="deleteWarrant('${w.id}')">Delete</button></div></td></tr>`).join('')}</tbody></table></div>`}
+          ${!ordered.length ? `<div class="empty"><b>No warrants recorded</b>Select “Issue warrant” to add a warrant record.</div>` : `<div class="tablewrap"><table><thead><tr><th>Warrant no.</th><th>Type / Subject</th><th>Issued</th><th>Expiry</th><th>Authorised by</th><th>Status</th><th>Actions</th></tr></thead><tbody>${ordered.map(w=>`<tr><td><b>${esc(w.number)}</b></td><td>${esc(w.type)}<div class="muted">${esc(w.subject)}</div></td><td>${esc(w.issuedDate||'—')}</td><td>${esc(w.expiryDate||'—')}</td><td>${esc(w.authorisedBy||'—')}</td><td>${statusTag(w.status||'Active', 'warrant')}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" onclick="viewWarrant('${w.id}')">View</button><button class="btn small" onclick="openWarrantForm('${w.id}')">Edit</button><button class="btn small danger" onclick="deleteWarrant('${w.id}')">Delete</button></div></td></tr>`).join('')}</tbody></table></div>`}
         </section>`;
     }
 
@@ -1489,7 +1526,7 @@
       document.getElementById('calendarForm').onsubmit=saveCalendarEvent;
     }
     function saveCalendarEvent(ev){ev.preventDefault();const f=new FormData(ev.target),idv=String(f.get('id')||''),old=calendarEvents.find(x=>x.id===idv);const item={id:idv,title:String(f.get('title')||'').trim(),type:String(f.get('type')||'Other'),date:String(f.get('date')||''),time:String(f.get('time')||''),endTime:String(f.get('endTime')||''),caseId:String(f.get('caseId')||''),location:String(f.get('location')||'').trim(),presidingOfficial:String(f.get('presidingOfficial')||'').trim(),assignedStaff:String(f.get('assignedStaff')||'').trim(),participants:String(f.get('participants')||'').trim(),status:String(f.get('status')||'Scheduled'),description:String(f.get('description')||'').trim(),outcome:String(f.get('outcome')||'').trim(),nextDate:String(f.get('nextDate')||''),createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(old)calendarEvents=calendarEvents.map(x=>x.id===idv?item:x);else calendarEvents.unshift(item);save();log(old?'Updated calendar event':'Added calendar event',item.id,item.title+' · '+item.date);closeModal();render();toast(old?'Calendar event updated.':'Calendar event saved.');}
-    function viewCalendarEvent(eventId){const e=calendarEvents.find(x=>x.id===eventId);if(!e)return;const c=cases.find(x=>x.id===e.caseId);const detail=(label,value)=>`<div class="detailbox"><small>${label}</small><p>${esc(value||'—')}</p></div>`;document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">CALENDAR EVENT · ${esc(e.status)}</div><h2>${esc(e.title)}</h2><div class="muted">${esc(e.type)} · ${date(e.date)}${e.time?' · '+esc(e.time):''}${e.endTime?'–'+esc(e.endTime):''}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="detailgrid">${detail('Linked case',c?c.id+' — '+c.title:e.caseId)}${detail('Location',e.location)}${detail('Presiding official',e.presidingOfficial)}${detail('Assigned staff',e.assignedStaff)}${detail('Participants',e.participants)}${detail('Next hearing / follow-up',e.nextDate?date(e.nextDate):'')}${detail('Notes / agenda',e.description)}${detail('Outcome / minutes',e.outcome)}</div></div><div class="formfoot"><button class="btn danger" onclick="deleteCalendarEvent('${e.id}')">Delete</button><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openCalendarForm('${e.id}')">Edit event</button></div></section></div>`;}
+    function viewCalendarEvent(eventId){const e=calendarEvents.find(x=>x.id===eventId);if(!e)return;const c=cases.find(x=>x.id===e.caseId);const detail=(label,value)=>`<div class="detailbox"><small>${label}</small><p>${esc(value||'—')}</p></div>`;document.getElementById('modalroot').innerHTML=`<div class="modalback" onclick="if(event.target===this)closeModal()"><section class="modal"><div class="modalhead"><div><div class="eyebrow">CALENDAR EVENT</div>${statusTag(e.status, 'calendar')}<h2>${esc(e.title)}</h2><div class="muted">${esc(e.type)} · ${date(e.date)}${e.time?' · '+esc(e.time):''}${e.endTime?'–'+esc(e.endTime):''}</div></div><button class="close" onclick="closeModal()">✕</button></div><div class="formbody"><div class="detailgrid">${detail('Linked case',c?c.id+' — '+c.title:e.caseId)}${detail('Location',e.location)}${detail('Presiding official',e.presidingOfficial)}${detail('Assigned staff',e.assignedStaff)}${detail('Participants',e.participants)}${detail('Next hearing / follow-up',e.nextDate?date(e.nextDate):'')}${detail('Notes / agenda',e.description)}${detail('Outcome / minutes',e.outcome)}</div></div><div class="formfoot"><button class="btn danger" onclick="deleteCalendarEvent('${e.id}')">Delete</button><button class="btn" onclick="closeModal()">Close</button><button class="btn primary" onclick="openCalendarForm('${e.id}')">Edit event</button></div></section></div>`;}
     function deleteCalendarEvent(eventId){const e=calendarEvents.find(x=>x.id===eventId);if(!e)return;if(!confirm(`Delete calendar event "${e.title}"?`))return;calendarEvents=calendarEvents.filter(x=>x.id!==eventId);save();log('Deleted calendar event',e.id,e.title);closeModal();render();toast('Calendar event deleted.');}
 
     function casesPage() {
@@ -1627,7 +1664,7 @@
                 return `
                   <div style="margin:13px 0">
                     <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px">
-                      <span>${statusTag(s)}</span><b>${n}</b>
+                      <span>${statusTag(s, 'case')}</span><b>${n}</b>
                     </div>
                     <div style="height:6px;border-radius:10px;background:#292e36;overflow:hidden">
                       <div style="height:100%;width:${total ? 100 * n / total : 0}%;background:#c7cbd1;border-radius:10px"></div>
@@ -1899,7 +1936,7 @@
             </div>
             <div class="formbody">
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:17px">
-                ${statusTag(c.status)}
+                ${statusTag(c.status, 'case')}
                 <span class="tag" style="background:#292e36;color:#d4d9df">${esc(c.priority)} priority</span>
                 <span class="tag" style="background:#292e36;color:#d4d9df">${(c.images || []).length} evidence images</span>
               </div>

@@ -1001,6 +1001,7 @@
           <button data-page="retainers"><span class="ico">▧</span>Retainer agreements</button>
           <button data-page="businesses"><span class="ico">▣</span>Business registrations</button>
           <button data-page="staff"><span class="ico">♙</span>Staff list</button>
+          <button data-page="weekly-services"><span class="ico">▦</span>Weekly services</button>
           <button data-page="evidence"><span class="ico">▧</span>Evidence register</button>
           <button data-page="activity"><span class="ico">◷</span>Activity log</button>
         </nav>
@@ -1245,6 +1246,25 @@
       }
     }
 
+    function weeklyServicesPage() {
+      const sheetUrl = 'https://docs.google.com/spreadsheets/d/1Nn55DPkxH-QmUIXixT1u-3tKy68P0sT29DBWWyPJ8aA/edit?gid=0#gid=0';
+      const embedUrl = 'https://docs.google.com/spreadsheets/d/1Nn55DPkxH-QmUIXixT1u-3tKy68P0sT29DBWWyPJ8aA/edit?gid=0&rm=minimal';
+      return `
+        ${head('STAFF WORK TRACKING', 'Weekly services', 'Record the services completed by DOJ staff during the week and use the linked sheet to track weekly commission.', `<a class="btn primary" href="${sheetUrl}" target="_blank" rel="noopener">Open spreadsheet in Google Sheets ↗</a>`)}
+        <section class="panel" style="padding:0;overflow:hidden">
+          <div class="panelhead" style="padding:16px 19px;margin:0;border-bottom:1px solid var(--line)">
+            <div><h2>Unity Law — Weekly Services Register</h2><p>Changes are saved in the linked Google spreadsheet, not in the DOJ portal database.</p></div>
+            <a class="btn" href="${sheetUrl}" target="_blank" rel="noopener">Open in new tab ↗</a>
+          </div>
+          <div style="padding:12px 18px;background:rgba(245,158,11,.08);border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)">
+            <b style="color:#F59E0B">Access note:</b> Staff must be signed in to a Google account that has Editor access to this spreadsheet. If the sheet does not allow editing here, use “Open in new tab”. Do not set the sheet to public editing unless that is intentional.
+          </div>
+          <div style="height:calc(100vh - 285px);min-height:560px;background:#fff">
+            <iframe title="Unity Law Weekly Services Google Sheet" src="${embedUrl}" style="display:block;width:100%;height:100%;border:0" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+          </div>
+        </section>`;
+    }
+
     function render() {
       applyExpiryStatuses();
       const root = document.getElementById('content');
@@ -1258,6 +1278,7 @@
       else if (page === 'retainers') root.innerHTML = retainersPage();
       else if (page === 'businesses') root.innerHTML = businessesPage();
       else if (page === 'staff') root.innerHTML = staffPage();
+      else if (page === 'weekly-services') root.innerHTML = weeklyServicesPage();
       else if (page === 'evidence') root.innerHTML = evidencePage();
       else if (page === 'activity') root.innerHTML = activityPage();
       else if (page === 'reports') root.innerHTML = reportsPage();
